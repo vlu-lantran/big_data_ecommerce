@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "hero",
+      "eyebrow": "Class 5 Lab · Infographic Mode",
+      "title": "The E-Commerce Turnaround Challenge",
+      "description": "One-way teaching view for structured decision-making. Students run all computations in external notebooks.",
+      "badges": [
+        "Role: Director of E-Commerce Strategy",
+        "Time Limit: 2 Hours",
+        "No Submission Flow"
+      ]
+    },
+    {
+      "type": "key_value_grid",
+      "title": "Session Frame",
+      "items": [
+        {
+          "label": "Objective",
+          "value": "Recover margin with segmentation, campaign ROI control, and policy optimization"
+        },
+        {
+          "label": "Allowed Tools",
+          "value": "Jupyter, ChatGPT, Gemini, GitHub Copilot"
+        },
+        {
+          "label": "Delivery Model",
+          "value": "Instructor-to-student only; no learner data captured in app"
+        }
+      ]
+    },
+    {
+      "type": "callout",
+      "tone": "warning",
+      "title": "Scenario",
+      "body": "The company is bleeding margin from inefficient marketing and high return costs. Use K-Means persona logic to justify profitable campaign and operations decisions."
+    },
+    {
+      "type": "csv_table",
+      "title": "Data Snippet (customer_data_dump.csv)",
+      "columns": [
+        "Customer_ID",
+        "Account_Age_Days",
+        "Total_Orders",
+        "Total_Gross_Spend",
+        "Reward_Points_Earned",
+        "Browser_Type",
+        "Days_Since_Last_Order",
+        "Total_Page_Views",
+        "Avg_Discount_Used",
+        "Email_Open_Rate",
+        "Return_Rate_Percent"
+      ],
+      "rows": [
+        {
+          "Customer_ID": "CUST_004512",
+          "Account_Age_Days": 1140,
+          "Total_Orders": 3,
+          "Total_Gross_Spend": 34.5,
+          "Reward_Points_Earned": 31,
+          "Browser_Type": "Chrome",
+          "Days_Since_Last_Order": 62,
+          "Total_Page_Views": 4102,
+          "Avg_Discount_Used": 0.65,
+          "Email_Open_Rate": 0.88,
+          "Return_Rate_Percent": 0.05
+        },
+        {
+          "Customer_ID": "CUST_008921",
+          "Account_Age_Days": 45,
+          "Total_Orders": 14,
+          "Total_Gross_Spend": 480.25,
+          "Reward_Points_Earned": 512,
+          "Browser_Type": "Safari",
+          "Days_Since_Last_Order": 12,
+          "Total_Page_Views": 115,
+          "Avg_Discount_Used": 0.04,
+          "Email_Open_Rate": 0.12,
+          "Return_Rate_Percent": 0.01
+        },
+        {
+          "Customer_ID": "CUST_001024",
+          "Account_Age_Days": 890,
+          "Total_Orders": 1,
+          "Total_Gross_Spend": 22.1,
+          "Reward_Points_Earned": 20,
+          "Browser_Type": "Firefox",
+          "Days_Since_Last_Order": 240,
+          "Total_Page_Views": 15,
+          "Avg_Discount_Used": 0.15,
+          "Email_Open_Rate": 0.0,
+          "Return_Rate_Percent": 0.0
+        },
+        {
+          "Customer_ID": "CUST_007633",
+          "Account_Age_Days": 320,
+          "Total_Orders": 8,
+          "Total_Gross_Spend": 160.75,
+          "Reward_Points_Earned": 170,
+          "Browser_Type": "Chrome",
+          "Days_Since_Last_Order": 28,
+          "Total_Page_Views": 850,
+          "Avg_Discount_Used": 0.22,
+          "Email_Open_Rate": 0.45,
+          "Return_Rate_Percent": 0.48
+        },
+        {
+          "Customer_ID": "CUST_002199",
+          "Account_Age_Days": 1420,
+          "Total_Orders": 5,
+          "Total_Gross_Spend": 55.0,
+          "Reward_Points_Earned": 48,
+          "Browser_Type": "Edge",
+          "Days_Since_Last_Order": 41,
+          "Total_Page_Views": 2100,
+          "Avg_Discount_Used": 0.5,
+          "Email_Open_Rate": 0.92,
+          "Return_Rate_Percent": 0.09
+        }
+      ]
+    },
+    {
+      "type": "part_block",
+      "eyebrow": "Part 1",
+      "title": "Data Purge and Naming Ceremony",
+      "description": "Segment only on meaningful financial behavior and justify cluster count clearly.",
+      "tasks": [
+        "Select financially meaningful features and explicitly drop vanity/noise dimensions.",
+        "Choose k using elbow evidence, visual separation, and operational practicality.",
+        "Assign cluster persona names from centroid evidence."
+      ],
+      "hints": [
+        "Prioritize spend, order frequency, return behavior, discount dependence, and recency signals.",
+        "Identifiers and demographic/browser columns are usually poor clustering distance dimensions.",
+        "A useful k yields distinct personas that your team can action, not fragmented micro-clusters."
+      ]
+    },
+    {
+      "type": "part_block",
+      "eyebrow": "Part 2",
+      "title": "Merchandising Matrix (ROI Challenge)",
+      "description": "Map Campaign A/B/C to cluster personas with economically defensible logic.",
+      "tasks": [
+        "Assign exactly one campaign to one cluster persona each.",
+        "Use centroid values to calculate AOV and projected profit for each assignment.",
+        "Reject assignments that fail profitability constraints."
+      ],
+      "table": {
+        "title": "Campaign Playbook",
+        "columns": [
+          {
+            "key": "campaign",
+            "label": "Campaign"
+          },
+          {
+            "key": "cost",
+            "label": "Cost per User"
+          },
+          {
+            "key": "conversion",
+            "label": "Expected Conversion"
+          }
+        ],
+        "rows": [
+          {
+            "campaign": "A · Personalized AI-Generated Video SMS",
+            "cost": "$2.00",
+            "conversion": "5%"
+          },
+          {
+            "campaign": "B · SMS Flash Sale (20% Off)",
+            "cost": "$0.10",
+            "conversion": "15%"
+          },
+          {
+            "campaign": "C · VIP Concierge Phone Call",
+            "cost": "$10.00",
+            "conversion": "25%"
+          }
+        ]
+      },
+      "formulas": [
+        {
+          "title": "AOV Formula",
+          "tone": "blue",
+          "formula": "AOV = Centroid Total Spend / Centroid Total Orders"
+        },
+        {
+          "title": "Projected Profit Formula",
+          "tone": "teal",
+          "formula": "Projected Profit = (Cluster Size * Conversion Rate * AOV) - (Cluster Size * Campaign Cost)"
+        }
+      ],
+      "hints": [
+        "High-cost campaigns should only be assigned where expected unit economics justify spend.",
+        "Validate projected net profit numerically before finalizing any mapping.",
+        "It is normal for some clusters to receive no campaign."
+      ]
+    },
+    {
+      "type": "part_block",
+      "eyebrow": "Part 3",
+      "title": "Zero-Sum Policy Game (Operations)",
+      "description": "Use penalty savings to fund premium service while controlling return-bleed impact.",
+      "tasks": [
+        "Choose one cluster for Premium Policy (free overnight shipping + free returns).",
+        "Choose one toxic cluster for Penalty Policy ($12 restocking fee).",
+        "Prove the penalty target has sufficient return-bleed to justify this move."
+      ],
+      "formulas": [
+        {
+          "title": "Return Bleed Formula",
+          "tone": "violet",
+          "formula": "Return Bleed = Cluster Size * Centroid Total Orders * Centroid Return Rate * 12.00"
+        }
+      ],
+      "hints": [
+        "Premium policy should favor high-value, lower-risk personas.",
+        "Penalty policy should target highest aggregate bleed, not only highest return rate.",
+        "Defend decisions using cluster size and centroid evidence together."
+      ],
+      "summaryTemplate": "We are penalizing [Cluster X] because our calculations show they are bleeding $____ from our logistics budget. We will recover those funds and use them to pay for the VIP experience of [Cluster Y]."
+    }
+  ]
+}

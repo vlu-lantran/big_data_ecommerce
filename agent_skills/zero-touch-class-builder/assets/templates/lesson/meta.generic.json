@@ -1,0 +1,8 @@
+{
+  "id": "lesson-x",
+  "title": "Class X: Topic Name",
+  "api_route": "/api/simulations/topic-name",
+  "chart_type": "bar",
+  "x_key": "x_field",
+  "y_key": "y_field"
+}

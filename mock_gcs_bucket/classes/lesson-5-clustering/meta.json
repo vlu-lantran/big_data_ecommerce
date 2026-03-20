@@ -1,0 +1,9 @@
+{
+  "id": "lesson-5",
+  "title": "Class 5: Clustering & Segmentation",
+  "api_route": "/api/simulations/clustering",
+  "simulation_module": "class5-kmeans",
+  "chart_type": "bar",
+  "x_key": "cluster",
+  "y_key": "size"
+}

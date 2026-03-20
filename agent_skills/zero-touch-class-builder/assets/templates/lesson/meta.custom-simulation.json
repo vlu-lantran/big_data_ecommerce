@@ -1,0 +1,9 @@
+{
+  "id": "lesson-x",
+  "title": "Class X: Advanced Topic",
+  "api_route": "/api/simulations/advanced-topic",
+  "simulation_module": "advanced-topic-module",
+  "chart_type": "bar",
+  "x_key": "x_field",
+  "y_key": "y_field"
+}
