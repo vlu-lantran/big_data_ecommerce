@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
 
 const toneClasses = {
   info: 'inf-callout-info',
@@ -17,6 +19,19 @@ const formulaToneClasses = {
 function BlockTitle({ title }) {
   if (!title) return null
   return <h4 className="text-base font-semibold text-slate-900">{title}</h4>
+}
+
+function TaskItem({ content, index }) {
+  return (
+    <article className="flex items-center gap-4 rounded-xl border border-slate-200/60 bg-white/50 p-3 shadow-sm transition-all hover:bg-white/80">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-[12px] font-bold text-blue-600 shadow-sm">
+        {index + 1}
+      </span>
+      <div className="markdown-content min-w-0 flex-1 text-[14px] leading-relaxed text-slate-700">
+        <ReactMarkdown rehypePlugins={[rehypeRaw]}>{content}</ReactMarkdown>
+      </div>
+    </article>
+  )
 }
 
 function HeroBlock({ block }) {
@@ -234,13 +249,13 @@ function PartBlock({ block }) {
 
       <div className="inf-part-body">
         {Array.isArray(block.tasks) && block.tasks.length > 0 && (
-          <div className="inf-subsection">
+          <div className="inf-subsection space-y-3">
             <p className="inf-subtitle">Tasks</p>
-            <ol className="ml-5 list-decimal space-y-2 text-sm text-slate-700">
+            <div className="space-y-3">
               {block.tasks.map((task, taskIndex) => (
-                <li key={`task-${taskIndex}`}>{task}</li>
+                <TaskItem key={`task-${taskIndex}`} content={task} index={taskIndex} />
               ))}
-            </ol>
+            </div>
           </div>
         )}
 
@@ -356,13 +371,7 @@ function renderBlock(block, index) {
 export default function InfographicView({ payload }) {
   const blocks = useMemo(() => payload?.blocks || [], [payload])
 
-  if (!payload) {
-    return (
-      <div className="section-shell">
-        <p className="text-sm text-slate-600">No infographic content configured for this lesson.</p>
-      </div>
-    )
-  }
+  if (!blocks.length) return null
 
   return <div className="space-y-4">{blocks.map((block, index) => renderBlock(block, index))}</div>
 }

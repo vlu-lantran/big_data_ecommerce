@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "hero",
+      "eyebrow": "Class 7 Lab · Infographic Mode",
+      "title": "Scaling Recommendation Systems",
+      "description": "Optimize the e-commerce funnel and deploy a robust recommendation engine for a high-traffic flash sale.",
+      "badges": [
+        "Role: Data Strategy Team",
+        "Tools: Python, Pandas, Scikit-Learn",
+        "Constraint: 500,000 users"
+      ]
+    },
+    {
+      "type": "callout",
+      "tone": "info",
+      "title": "The Scenario",
+      "body": "You are the newly hired Data Strategy Team for a rapidly growing multi-category cosmetics platform. It is three weeks before the biggest flash sale of the year. The CMO and CFO are relying on your team to optimize the e-commerce funnel, protect the marketing budget, and deploy a robust recommendation engine that will not crash the AWS servers when traffic spikes."
+    },
+    {
+      "type": "part_block",
+      "eyebrow": "Phase 1",
+      "title": "The Baseline & The E-commerce Funnel",
+      "description": "Establish baseline metrics by analyzing historical data.",
+      "tasks": [
+        "Load the Data: Import the October cosmetics dataset into a Pandas DataFrame.",
+        "Calculate the Drop-Off: Calculate the exact number of unique user sessions at each stage: Total Views → Total Carts → Total Purchases.",
+        "Visualize the Funnel: Build an interactive visual representation using `plotly.express.funnel`.",
+        "Business Intelligence: Identify the overall conversion rate and the most critical bottleneck."
+      ]
+    },
+    {
+      "type": "part_block",
+      "eyebrow": "Phase 2",
+      "title": "The Lookalike Engine & The Out-of-Stock Crisis",
+      "description": "Deploy Collaborative Filtering to save a high-value sale.",
+      "tasks": [
+        "Quantify User Intent: Create `interaction_score` column (View=1, Cart=3, Purchase=5). Group by user/item and keep MAX.",
+        "Build the Matrix: Pivot data into a User-Item Interaction Matrix.",
+        "The Rescue: Run Collaborative Filtering to find a lookalike for a target user whose item is out of stock.",
+        "The Deliverable: Suggest Top 3 alternative products to save the sale."
+      ],
+      "table": {
+        "title": "Interaction Weights",
+        "columns": [
+          {"key": "event", "label": "Event Type"},
+          {"key": "weight", "label": "Business Weight"}
+        ],
+        "rows": [
+          {"event": "View", "weight": "1"},
+          {"event": "Cart", "weight": "3"},
+          {"event": "Purchase", "weight": "5"}
+        ]
+      }
+    },
+    {
+      "type": "part_block",
+      "eyebrow": "Phase 3",
+      "title": "The Q4 VIP Campaign (The Final Challenge)",
+      "description": "Scale the engine while managing server constraints.",
+      "tasks": [
+        "Server Limits: Aggressively reduce the 5-month dataset (500,000 users) to prevent cloud container crashes.",
+        "The Hero Item: Identify the single most valuable product to feature in the marketing campaign."
+      ],
+      "hints": [
+        "Consider filtering out low-interaction users or products to reduce matrix sparsity.",
+        "Focus on high-confidence interaction patterns for the 'Hero Item' selection."
+      ]
+    }
+  ]
+}

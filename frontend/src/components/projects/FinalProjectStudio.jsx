@@ -83,7 +83,7 @@ const DELIVERABLES = [
   {
     key: 'plan',
     name: 'The Business Plan (Executive Summary)',
-    format: 'One 2-to-3 page PDF',
+    format: 'At most 10 pages PDF or Word',
     requirement:
       'Summary combines weekly milestones and outlines RecSys logic, AdTech bidding strategy, and financial math for target cluster (AOV and bundle margins).',
     criticality: 'Critical Gate',

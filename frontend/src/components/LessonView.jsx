@@ -151,8 +151,8 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
     }
 
     setActiveTab((prev) => (availableTabs.includes(prev) ? prev : availableTabs[0]))
-    setInfographicPayload(null)
     setSimulationData([])
+
     if (!hideSlides) {
       loadSlides()
     } else {
@@ -163,13 +163,17 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
   }, [apiBaseUrl, lessonFolder, lessonMeta, hideSlides, availableTabs])
 
   useEffect(() => {
+    let ignore = false
+
     if (!lessonFolder || !lessonMeta || !lessonMeta?.infographic_file) {
       setInfographicPayload(null)
+      setLoadingInfographic(false)
       return
     }
 
     async function loadInfographic() {
       setLoadingInfographic(true)
+      setInfographicPayload(null) // Reset payload immediately when starting a new load
       setError('')
 
       try {
@@ -185,15 +189,25 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
         }
 
         const payload = await response.json()
-        setInfographicPayload(payload)
+        if (!ignore) {
+          setInfographicPayload(payload)
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error while loading infographic')
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : 'Unknown error while loading infographic')
+        }
       } finally {
-        setLoadingInfographic(false)
+        if (!ignore) {
+          setLoadingInfographic(false)
+        }
       }
     }
 
     loadInfographic()
+
+    return () => {
+      ignore = true
+    }
   }, [apiBaseUrl, lessonFolder, lessonMeta?.infographic_file])
 
   useEffect(() => {
@@ -285,8 +299,14 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
             <div className="section-shell">
               <SlidesSkeleton />
             </div>
-          ) : (
+          ) : hasInfographic && infographicPayload ? (
             <InfographicView payload={infographicPayload} />
+          ) : (
+            <div className="section-shell">
+              <p className="text-sm text-slate-600">
+                No infographic content configured for this lesson.
+              </p>
+            </div>
           )}
         </>
       )}
