@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import Class5ClusteringSimulation from './simulations/Class5ClusteringSimulation'
+import MidtermTestSimulation from './simulations/MidtermTestSimulation'
 import FinalProjectStudio from './projects/FinalProjectStudio'
 import InfographicView from './InfographicView'
 import {
@@ -219,6 +220,9 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
   const DedicatedSimulationModule = useMemo(() => {
     if (lessonMeta?.simulation_module === 'class5-kmeans') {
       return Class5ClusteringSimulation
+    }
+    if (lessonMeta?.simulation_module === 'midterm-test') {
+      return MidtermTestSimulation
     }
     return null
   }, [lessonMeta?.simulation_module])

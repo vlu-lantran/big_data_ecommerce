@@ -36,6 +36,6 @@ jobs:
           context: .
           file: frontend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/bigdata-frontend:v2.0
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/bigdata-frontend:v3.0
           build-args: |
             VITE_API_BASE_URL=${{ secrets.PRODUCTION_API_URL }}

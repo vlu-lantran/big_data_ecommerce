@@ -39,6 +39,7 @@ Important metadata keys:
 
 2. Create or update lesson content files.
 - Create `classes/<lesson-folder>/meta.json`.
+- **Naming Convention**: Use `Class X: Title` for lecture lessons and `Class X Lab: Title` for lab/practical lessons. 
 - Create `slides.md` unless this lesson is intentionally infographic-only.
 - Add lesson folder to `classes/index.json`.
 
@@ -57,6 +58,7 @@ Important metadata keys:
 5. Add infographic content when needed.
 - Create `classes/<lesson-folder>/<infographic_file>` (JSON).
 - Keep it one-way/read-only unless a product requirement explicitly needs learner input capture.
+- **Markdown Support**: The `tasks` array in `part_block` supports full Markdown (bold, code, links).
 - Prefer grouped `part_block` sections for focusable lesson structure.
 
 6. Validate behavior end-to-end.
