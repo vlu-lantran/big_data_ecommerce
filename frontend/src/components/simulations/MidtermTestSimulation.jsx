@@ -311,11 +311,6 @@ export default function MidtermTestSimulation() {
         <section>
           <h2 className="text-2xl font-bold mb-4 border-b pb-2">Phần 1: Lý thuyết (35%)</h2>
           <p className="mb-4 text-sm">Ghép các kịch bản với các khái niệm tương ứng.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 text-xs bg-slate-100 p-4 rounded">
-            {CONCEPTS.map((c, i) => (
-              <div key={i}>{c}</div>
-            ))}
-          </div>
           <div className="space-y-4">
             {testData.p1.map((q, i) => (
               <div key={i} className="bg-white p-4 rounded shadow-sm border">
