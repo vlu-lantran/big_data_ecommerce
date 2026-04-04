@@ -292,17 +292,25 @@ export default function MidtermTestSimulation() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 text-slate-800 pb-32">
-      <div className="flex justify-between items-center bg-white p-4 sticky top-0 border-b shadow-sm z-10">
+    <div className="max-w-4xl mx-auto p-4 md:p-8 text-slate-800">
+      <div className="flex justify-between items-center bg-white p-4 sticky top-0 border-b shadow-sm z-20">
         <div>
           <h1 className="text-xl font-bold">Midterm Test</h1>
           <p className="text-sm text-slate-500">{name} ({studentId})</p>
         </div>
-        <div className="text-right">
-          <div className="text-xl font-mono font-bold text-red-600">
-            {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
+        <div className="flex items-center gap-4 md:gap-8">
+          <button 
+            onClick={generateFile}
+            className="hidden sm:block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow text-sm transition"
+          >
+            Submit
+          </button>
+          <div className="text-right">
+            <div className="text-xl font-mono font-bold text-red-600">
+              {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
+            </div>
+            <p className="text-xs text-slate-500">Remaining</p>
           </div>
-          <p className="text-xs text-slate-500">Remaining</p>
         </div>
       </div>
 
@@ -408,10 +416,13 @@ export default function MidtermTestSimulation() {
         </section>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg flex justify-center z-50">
+      <div className="mt-16 bg-white border-2 border-green-100 p-8 rounded-2xl shadow-sm flex flex-col items-center mb-12">
+        <p className="mb-6 text-slate-600 text-center max-w-md">
+          Finished the exam? Please double check all your answers before clicking below to download your submission file.
+        </p>
         <button 
           onClick={generateFile}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105"
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-12 rounded-full shadow-lg transform transition hover:scale-105 text-lg"
         >
           Finish & Download Submission File
         </button>
