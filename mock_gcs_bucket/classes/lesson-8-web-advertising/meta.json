@@ -1,0 +1,6 @@
+{
+  "id": "lesson-8-web-advertising",
+  "title": "Class 8: Web Advertising",
+  "api_route": "/api/simulations/lesson-8-web-advertising",
+  "simulation_module": "class8-ad-bidding"
+}

@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "hero",
+      "eyebrow": "Class 8 Lab · Infographic Mode",
+      "title": "RTB Simulation: The Bidding War",
+      "description": "A 90-minute live simulation game teaching Web Advertising and Real-Time Bidding mechanics. Students manage budgets, optimize ROAS, and avoid the Winner's Curse.",
+      "badges": [
+        "Role: AdTech Bidders",
+        "Time Limit: 90 Minutes",
+        "Vickrey Second-Price Auction"
+      ]
+    },
+    {
+      "type": "key_value_grid",
+      "title": "Simulation Constraints",
+      "items": [
+        {
+          "label": "Budget",
+          "value": "$50.00 Starting Budget per Team"
+        },
+        {
+          "label": "Payouts",
+          "value": "Exact Match ($15), Broad Match ($5), Miss ($0)"
+        },
+        {
+          "label": "Pricing Rule",
+          "value": "Vickrey Second-Price Auction (Winner pays 2nd highest bid + $0.01)"
+        },
+        {
+          "label": "Winning Condition",
+          "value": "Highest Net Profit (Revenue - Ad Spend)"
+        }
+      ]
+    },
+    {
+      "type": "callout",
+      "tone": "info",
+      "title": "Rules Overview (To Read to Students)",
+      "body": "Welcome to the RTB Arena. You represent one of 4 e-commerce brands: SneakerX, TechGadget, GlowBeauty, or FitGear. You start with $50.00. I will present a user profile. You will blindly submit your bid. The highest bidder wins the ad slot and pays one cent more than the second-highest bid. If the user is an 'Exact Match' to your brand, you earn $15 in revenue. 'Broad Match' earns $5. 'Miss' earns $0. The goal is to maximize Net Profit (Revenue minus Spend), not just to win auctions. Be careful not to drain your budget on low-value users!"
+    },
+    {
+      "type": "part_block",
+      "eyebrow": "Instructor Guide",
+      "title": "Step-by-Step Workflow (< 90 seconds per round)",
+      "description": "Follow this loop to keep the energy high and the pace fast.",
+      "tasks": [
+        "**Announce:** Read the User Profile / Search Query aloud to the room.",
+        "**Evaluate:** Give teams 15 seconds to determine if they are an Exact Match, Broad Match, or Miss.",
+        "**Bid:** Count down from 5. All teams hold up their whiteboards/cards with their bid amount simultaneously.",
+        "**Resolve:** Identify the highest bidder. Identify the second-highest bid.",
+        "**Calculate:** Highest bidder pays (Second Highest Bid + $0.01). Calculate their revenue based on match type.",
+        "**Log:** Record the result on the public Game Master Ledger (Spend and Revenue)."
+      ]
+    },
+    {
+      "type": "csv_table",
+      "title": "Game Master Ledger (Rounds 1-12: The Wild West)",
+      "columns": [
+        "Round",
+        "User Query",
+        "Exact Match ($15)",
+        "Broad Match ($5)",
+        "Miss ($0)",
+        "Trap / Notes"
+      ],
+      "rows": [
+        {
+          "Round": "1",
+          "User Query": "'buy running shoes'",
+          "Exact Match ($15)": "SneakerX",
+          "Broad Match ($5)": "FitGear",
+          "Miss ($0)": "TechGadget, GlowBeauty",
+          "Trap / Notes": "Easy starter."
+        },
+        {
+          "Round": "2",
+          "User Query": "'best noise cancelling headphones'",
+          "Exact Match ($15)": "TechGadget",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, GlowBeauty, FitGear",
+          "Trap / Notes": "Testing pure exact match."
+        },
+        {
+          "Round": "3",
+          "User Query": "'vegan lipstick'",
+          "Exact Match ($15)": "GlowBeauty",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, TechGadget, FitGear",
+          "Trap / Notes": "Testing pure exact match."
+        },
+        {
+          "Round": "4",
+          "User Query": "'workout clothes'",
+          "Exact Match ($15)": "FitGear",
+          "Broad Match ($5)": "SneakerX",
+          "Miss ($0)": "TechGadget, GlowBeauty",
+          "Trap / Notes": "Building confidence."
+        },
+        {
+          "Round": "5",
+          "User Query": "'gift for teenager'",
+          "Exact Match ($15)": "None",
+          "Broad Match ($5)": "ALL TEAMS",
+          "Miss ($0)": "None",
+          "Trap / Notes": "TRAP: Broad match frenzy. Tempts overbidding for low value."
+        },
+        {
+          "Round": "6",
+          "User Query": "'rare sneakers limited edition'",
+          "Exact Match ($15)": "SneakerX",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "TechGadget, GlowBeauty, FitGear",
+          "Trap / Notes": "High reward for SneakerX right after a broad trap."
+        },
+        {
+          "Round": "7",
+          "User Query": "'sports water bottle'",
+          "Exact Match ($15)": "FitGear",
+          "Broad Match ($5)": "SneakerX",
+          "Miss ($0)": "TechGadget, GlowBeauty",
+          "Trap / Notes": "Standard round."
+        },
+        {
+          "Round": "8",
+          "User Query": "'4k gaming monitor'",
+          "Exact Match ($15)": "TechGadget",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, GlowBeauty, FitGear",
+          "Trap / Notes": "Standard round."
+        },
+        {
+          "Round": "9",
+          "User Query": "'skincare routine steps'",
+          "Exact Match ($15)": "GlowBeauty",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, TechGadget, FitGear",
+          "Trap / Notes": "Standard round."
+        },
+        {
+          "Round": "10",
+          "User Query": "'cheap shoes online'",
+          "Exact Match ($15)": "SneakerX",
+          "Broad Match ($5)": "FitGear",
+          "Miss ($0)": "TechGadget, GlowBeauty",
+          "Trap / Notes": "Low intent, but still exact match."
+        },
+        {
+          "Round": "11",
+          "User Query": "'how to lose weight'",
+          "Exact Match ($15)": "None",
+          "Broad Match ($5)": "FitGear",
+          "Miss ($0)": "SneakerX, TechGadget, GlowBeauty",
+          "Trap / Notes": "TRAP: Vague intent. Broad matches often overspend."
+        },
+        {
+          "Round": "12",
+          "User Query": "'buy everything sale'",
+          "Exact Match ($15)": "None",
+          "Broad Match ($5)": "ALL TEAMS",
+          "Miss ($0)": "None",
+          "Trap / Notes": "Final Wild West TRAP: Tempts teams to dump remaining budget before phase 2."
+        }
+      ]
+    },
+    {
+      "type": "csv_table",
+      "title": "Game Master Ledger (Rounds 13-27: The Algorithmic Shift)",
+      "columns": [
+        "Round",
+        "User Query",
+        "Exact Match ($15)",
+        "Broad Match ($5)",
+        "Miss ($0)",
+        "Trap / Notes"
+      ],
+      "rows": [
+        {
+          "Round": "13",
+          "User Query": "'waterproof mascara'",
+          "Exact Match ($15)": "GlowBeauty",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, TechGadget, FitGear",
+          "Trap / Notes": "Algorithm test."
+        },
+        {
+          "Round": "14",
+          "User Query": "'mechanical keyboard'",
+          "Exact Match ($15)": "TechGadget",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, GlowBeauty, FitGear",
+          "Trap / Notes": "Algorithm test."
+        },
+        {
+          "Round": "15",
+          "User Query": "'gym shorts'",
+          "Exact Match ($15)": "FitGear",
+          "Broad Match ($5)": "SneakerX",
+          "Miss ($0)": "TechGadget, GlowBeauty",
+          "Trap / Notes": "Algorithm test."
+        },
+        {
+          "Round": "16",
+          "User Query": "'running marathon gear'",
+          "Exact Match ($15)": "SneakerX",
+          "Broad Match ($5)": "FitGear",
+          "Miss ($0)": "TechGadget, GlowBeauty",
+          "Trap / Notes": "Algorithm test."
+        },
+        {
+          "Round": "17",
+          "User Query": "'black friday deals'",
+          "Exact Match ($15)": "None",
+          "Broad Match ($5)": "ALL TEAMS",
+          "Miss ($0)": "None",
+          "Trap / Notes": "SHOCK: Traffic spike. Algorithms bidding on broad might overspend."
+        },
+        {
+          "Round": "18",
+          "User Query": "'cyber monday deals'",
+          "Exact Match ($15)": "None",
+          "Broad Match ($5)": "ALL TEAMS",
+          "Miss ($0)": "None",
+          "Trap / Notes": "SHOCK: Traffic spike part 2. Punishes aggressive broad bidding."
+        },
+        {
+          "Round": "19",
+          "User Query": "'high end foundation'",
+          "Exact Match ($15)": "GlowBeauty",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, TechGadget, FitGear",
+          "Trap / Notes": "Reward for conserved budget."
+        },
+        {
+          "Round": "20",
+          "User Query": "'wireless mouse'",
+          "Exact Match ($15)": "TechGadget",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, GlowBeauty, FitGear",
+          "Trap / Notes": "Reward for conserved budget."
+        },
+        {
+          "Round": "21",
+          "User Query": "'sports bra'",
+          "Exact Match ($15)": "FitGear",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, TechGadget, GlowBeauty",
+          "Trap / Notes": "Standard round."
+        },
+        {
+          "Round": "22",
+          "User Query": "'basketball shoes'",
+          "Exact Match ($15)": "SneakerX",
+          "Broad Match ($5)": "FitGear",
+          "Miss ($0)": "TechGadget, GlowBeauty",
+          "Trap / Notes": "Standard round."
+        },
+        {
+          "Round": "23",
+          "User Query": "'privacy blocked user'",
+          "Exact Match ($15)": "None",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "ALL TEAMS",
+          "Trap / Notes": "SHOCK: Privacy Data Loss. Teams with bad fallback logic will bid and waste money."
+        },
+        {
+          "Round": "24",
+          "User Query": "'privacy blocked user'",
+          "Exact Match ($15)": "None",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "ALL TEAMS",
+          "Trap / Notes": "SHOCK: Privacy Data Loss part 2."
+        },
+        {
+          "Round": "25",
+          "User Query": "'anti-aging serum'",
+          "Exact Match ($15)": "GlowBeauty",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, TechGadget, FitGear",
+          "Trap / Notes": "Late game high value."
+        },
+        {
+          "Round": "26",
+          "User Query": "'smart watch'",
+          "Exact Match ($15)": "TechGadget",
+          "Broad Match ($5)": "FitGear",
+          "Miss ($0)": "SneakerX, GlowBeauty",
+          "Trap / Notes": "Late game high value."
+        },
+        {
+          "Round": "27",
+          "User Query": "'yoga mat'",
+          "Exact Match ($15)": "FitGear",
+          "Broad Match ($5)": "None",
+          "Miss ($0)": "SneakerX, TechGadget, GlowBeauty",
+          "Trap / Notes": "Final round. Teams might dump remaining budget."
+        }
+      ]
+    }
+  ]
+}

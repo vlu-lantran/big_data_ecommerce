@@ -1,5 +1,4 @@
 [
-  "midterm-test",
   "lesson-2-technology-of-scale",
   "lesson-3-finding-similar-item",
   "lesson-4-market-basket",
@@ -8,5 +7,8 @@
   "lesson-6-seo-and-link-analysis",
   "lesson-7-recsys",
   "lesson-7-lab-scaling-recsys",
+  "lesson-8-web-advertising",
+  "lesson-8-lab-web-advertising",
+  "midterm-test",
   "project-final-fast-fashion-disruptor"
 ]
