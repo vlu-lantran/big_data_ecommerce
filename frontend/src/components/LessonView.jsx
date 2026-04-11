@@ -99,6 +99,7 @@ function SlidesSkeleton() {
 }
 
 export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
+  console.log("DEBUG: LessonView rendering with folder:", lessonFolder, "meta:", lessonMeta);
   const [activeTab, setActiveTab] = useState(tabs.slides)
   const [slidesMarkdown, setSlidesMarkdown] = useState('')
   const [infographicPayload, setInfographicPayload] = useState(null)
@@ -220,13 +221,17 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
   const hasMeta = useMemo(() => !!lessonMeta?.api_route, [lessonMeta])
   const DedicatedSimulationModule = useMemo(() => {
     const buildID = "FORCE-UPDATE-99";
-    console.log(`[${buildID}] LessonMeta Metadata:`, lessonMeta);
     const mod = (lessonMeta?.simulation_module || '').toString().trim().toLowerCase();
+    console.log(`[${buildID}] DedicatedSimulationModule check - mod: "${mod}", meta:`, lessonMeta);
     
     if (mod === 'class5-kmeans') return Class5ClusteringSimulation;
     if (mod === 'midterm-test') return MidtermTestSimulation;
-    if (mod === 'class8-ad-bidding' || mod === 'class8-rtb-arena') return Class8AdBiddingSimulation;
+    if (mod === 'class8-ad-bidding' || mod === 'class8-rtb-arena') {
+      console.log(`[${buildID}] MATCHED class8 module!`);
+      return Class8AdBiddingSimulation;
+    }
     
+    if (mod) console.warn(`[${buildID}] No component match for module key: "${mod}"`);
     return null;
   }, [lessonMeta?.simulation_module])
 

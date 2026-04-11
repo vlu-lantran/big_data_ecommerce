@@ -6,7 +6,7 @@ import os
 import pkgutil
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -22,6 +22,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_no_cache_header(request, call_next):
+    response: Response = await call_next(request)
+    if request.url.path.endswith(".json"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 
 def _resolve_bucket_path() -> Path:
@@ -72,15 +79,6 @@ def _autoload_simulation_routers() -> None:
         app.include_router(router)
         logger.info("Included simulation router: %s", module_name)
 
-
-from fastapi import FastAPI, Response
-...
-@app.middleware("http")
-async def add_no_cache_header(request, call_next):
-    response: Response = await call_next(request)
-    if request.url.path.endswith(".json"):
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    return response
 
 bucket_path = _resolve_bucket_path()
 app.mount("/mock_gcs_bucket", StaticFiles(directory=bucket_path), name="mock_gcs_bucket")

@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import LessonView from './components/LessonView'
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const urlParams = new URLSearchParams(window.location.search);
+const queryApiUrl = urlParams.get('api');
+const apiBaseUrl = queryApiUrl || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+console.log("DEBUG: Final API Base URL used by app:", apiBaseUrl);
+if (queryApiUrl) console.log("DEBUG: API URL overridden by query parameter:", queryApiUrl);
 const themeStorageKey = 'bigdata-theme'
 
 function formatFolderName(folder) {
@@ -88,14 +92,17 @@ export default function App() {
     async function loadLessonMeta() {
       try {
         setError('')
+        const metaUrl = `${apiBaseUrl}/mock_gcs_bucket/classes/${activeLessonFolder}/meta.json`;
+        console.log(`DEBUG: Fetching metadata from: ${metaUrl}`);
         const response = await fetch(
-          `${apiBaseUrl}/mock_gcs_bucket/classes/${activeLessonFolder}/meta.json`,
+          metaUrl,
           {
             cache: 'no-store',
           },
         )
 
         if (!response.ok) {
+          console.error(`DEBUG: Metadata fetch failed with status ${response.status} for ${activeLessonFolder}`);
           throw new Error(`Unable to load lesson metadata (${response.status})`)
         }
 
@@ -103,6 +110,7 @@ export default function App() {
         console.log(`Loaded Metadata for ${activeLessonFolder}:`, meta)
         setActiveLessonMeta(meta)
       } catch (err) {
+        console.error("DEBUG: Metadata fetch error:", err);
         setError(err instanceof Error ? err.message : 'Unknown error while loading metadata')
       }
     }
