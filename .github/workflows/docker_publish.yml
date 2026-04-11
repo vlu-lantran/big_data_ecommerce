@@ -30,7 +30,6 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/bigdata-backend:v2.2
-            ${{ secrets.DOCKERHUB_USERNAME }}/bigdata-backend:latest
 
       - name: Build and Push Frontend
         uses: docker/build-push-action@v5
@@ -39,7 +38,6 @@ jobs:
           file: frontend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/bigdata-frontend:v4.5
-            ${{ secrets.DOCKERHUB_USERNAME }}/bigdata-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/bigdata-frontend:v5.0
           build-args: |
             VITE_API_BASE_URL=${{ secrets.PRODUCTION_API_URL }}
