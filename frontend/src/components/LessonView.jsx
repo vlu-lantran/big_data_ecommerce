@@ -219,15 +219,10 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
 
   const hasMeta = useMemo(() => !!lessonMeta?.api_route, [lessonMeta])
   const DedicatedSimulationModule = useMemo(() => {
-    if (lessonMeta?.simulation_module === 'class5-kmeans') {
-      return Class5ClusteringSimulation
-    }
-    if (lessonMeta?.simulation_module === 'midterm-test') {
-      return MidtermTestSimulation
-    }
-    if (lessonMeta?.simulation_module === 'class8-ad-bidding') {
-      return Class8AdBiddingSimulation
-    }
+    const mod = lessonMeta?.simulation_module
+    if (mod === 'class5-kmeans') return Class5ClusteringSimulation
+    if (mod === 'midterm-test') return MidtermTestSimulation
+    if (mod === 'class8-ad-bidding') return Class8AdBiddingSimulation
     return null
   }, [lessonMeta?.simulation_module])
 
