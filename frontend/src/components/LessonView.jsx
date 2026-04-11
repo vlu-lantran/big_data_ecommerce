@@ -219,13 +219,13 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
 
   const hasMeta = useMemo(() => !!lessonMeta?.api_route, [lessonMeta])
   const DedicatedSimulationModule = useMemo(() => {
-    console.log("LessonMeta Metadata:", lessonMeta);
+    const buildID = "FORCE-UPDATE-99";
+    console.log(`[${buildID}] LessonMeta Metadata:`, lessonMeta);
     const mod = (lessonMeta?.simulation_module || '').toString().trim().toLowerCase();
-    console.log("Detected Simulation Module Key:", mod);
     
     if (mod === 'class5-kmeans') return Class5ClusteringSimulation;
     if (mod === 'midterm-test') return MidtermTestSimulation;
-    if (mod === 'class8-ad-bidding') return Class8AdBiddingSimulation;
+    if (mod === 'class8-ad-bidding' || mod === 'class8-rtb-arena') return Class8AdBiddingSimulation;
     
     return null;
   }, [lessonMeta?.simulation_module])

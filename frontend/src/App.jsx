@@ -130,7 +130,7 @@ export default function App() {
             <div>
               <p className="soft-badge flex items-center gap-2">
                 Zero-Touch Modular Learning Platform 
-                <span className="bg-blue-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V5.2-SYNC</span>
+                <span className="bg-red-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold animate-bounce">BUILD: FORCE-99</span>
               </p>
               <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                 Big Data Interactive Classroom

@@ -73,6 +73,15 @@ def _autoload_simulation_routers() -> None:
         logger.info("Included simulation router: %s", module_name)
 
 
+from fastapi import FastAPI, Response
+...
+@app.middleware("http")
+async def add_no_cache_header(request, call_next):
+    response: Response = await call_next(request)
+    if request.url.path.endswith(".json"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
 bucket_path = _resolve_bucket_path()
 app.mount("/mock_gcs_bucket", StaticFiles(directory=bucket_path), name="mock_gcs_bucket")
 _autoload_simulation_routers()
