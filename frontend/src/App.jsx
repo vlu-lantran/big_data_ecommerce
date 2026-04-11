@@ -100,6 +100,7 @@ export default function App() {
         }
 
         const meta = await response.json()
+        console.log(`Loaded Metadata for ${activeLessonFolder}:`, meta)
         setActiveLessonMeta(meta)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error while loading metadata')
@@ -127,7 +128,10 @@ export default function App() {
         <header className="glass-panel animate-fade-up mb-6 rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="soft-badge">Zero-Touch Modular Learning Platform</p>
+              <p className="soft-badge flex items-center gap-2">
+                Zero-Touch Modular Learning Platform 
+                <span className="bg-blue-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V5.2-SYNC</span>
+              </p>
               <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                 Big Data Interactive Classroom
               </h1>
