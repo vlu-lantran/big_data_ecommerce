@@ -26,13 +26,7 @@ def load_scenarios():
             return json.load(f)
     return []
 
-SCENARIOS = []
-
-def get_scenarios():
-    global SCENARIOS
-    if not SCENARIOS:
-        SCENARIOS = load_scenarios()
-    return SCENARIOS
+SCENARIOS = load_scenarios()
 
 class SimulationState:
     def __init__(self):
@@ -51,7 +45,6 @@ class SimulationState:
         self.time_left = 0
 
     def get_dict(self):
-        scenarios = get_scenarios()
         return {
             "currentRoundIndex": self.current_round_index,
             "bids": self.bids,
@@ -63,8 +56,8 @@ class SimulationState:
             "showPhase2Rules": self.show_phase2_rules,
             "showFinalSummary": self.show_final_summary,
             "timeLeft": self.time_left,
-            "scenariosCount": len(scenarios),
-            "currentScenario": scenarios[self.current_round_index] if 0 <= self.current_round_index < len(scenarios) else None
+            "scenariosCount": len(SCENARIOS),
+            "currentScenario": SCENARIOS[self.current_round_index] if 0 <= self.current_round_index < len(SCENARIOS) else None
         }
 
 state = SimulationState()
