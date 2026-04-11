@@ -1,3 +1,4 @@
+// Build Salt: 1712824114 (Forces fresh bundle generation)
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
