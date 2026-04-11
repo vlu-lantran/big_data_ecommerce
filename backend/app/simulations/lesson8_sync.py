@@ -34,9 +34,7 @@ class SimulationState:
 
     def reset(self):
         self.current_round_index = -1
-        self.bids: Dict[str, float] = {"SneakerX": 0.0, "TechGadget": 0.0, "GlowBeauty": 0.0, "FitGear": 0.0}
-        self.submitted_bids: Dict[str, bool] = {"SneakerX": False, "TechGadget": False, "GlowBeauty": False, "FitGear": False}
-        self.profits: Dict[str, float] = {"SneakerX": 0.0, "TechGadget": 0.0, "GlowBeauty": 0.0, "FitGear": 0.0}
+        self.players: Dict[str, Dict[str, Any]] = {}
         self.result: Optional[Dict[str, Any]] = None
         self.show_phase1_rules = False
         self.show_phase1_summary = False
@@ -47,9 +45,7 @@ class SimulationState:
     def get_dict(self):
         return {
             "currentRoundIndex": self.current_round_index,
-            "bids": self.bids,
-            "submittedBids": self.submitted_bids,
-            "profits": self.profits,
+            "players": self.players,
             "result": self.result,
             "showPhase1Rules": self.show_phase1_rules,
             "showPhase1Summary": self.show_phase1_summary,
@@ -84,22 +80,25 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# --- Core Logic ---
-
 def execute_auction():
     if state.current_round_index < 0 or state.current_round_index >= len(SCENARIOS):
         return
     
     scenario = SCENARIOS[state.current_round_index]
-    bids = state.bids
-    parsed_bids = [{"team": team, "amount": float(bids[team])} for team in bids]
-    parsed_bids.sort(key=lambda x: x["amount"], reverse=True)
+    bidding_players = [{"name": name, "bid": data["bid"], "archetype": data["archetype"]} 
+                       for name, data in state.players.items()]
     
-    winner = parsed_bids[0]
-    second_highest = parsed_bids[1] if len(parsed_bids) > 1 else None
-    
-    price_paid = (second_highest["amount"] + 0.01) if second_highest and second_highest["amount"] > 0 else 0.01
-    price_paid = min(price_paid, winner["amount"])
+    if not bidding_players:
+        state.result = {
+            "winner": "KHÔNG CÓ", "archetype": "N/A", "winningBid": 0.0, "pricePaid": 0.0,
+            "matchType": "Không có người chơi", "revenue": 0.0, "profit": 0.0
+        }
+        return
+
+    bidding_players.sort(key=lambda x: x["bid"], reverse=True)
+    winner = bidding_players[0]
+    second_highest_bid = bidding_players[1]["bid"] if len(bidding_players) > 1 else 0.0
+    price_paid = min(second_highest_bid + 0.01, winner["bid"])
     
     match_type, revenue = 'Trượt', 0.0
     exact = scenario.get("exact", "")
@@ -107,54 +106,57 @@ def execute_auction():
     exact_list = [exact] if isinstance(exact, str) else (exact or [])
     broad_list = [broad] if isinstance(broad, str) else (broad or [])
 
-    if exact == 'ALL TEAMS' or winner["team"] in exact_list:
+    if exact == 'ALL TEAMS' or winner["archetype"] in exact_list:
         match_type, revenue = 'Khớp chính xác', 15.0
-    elif broad == 'ALL TEAMS' or winner["team"] in broad_list:
+    elif broad == 'ALL TEAMS' or winner["archetype"] in broad_list:
         match_type, revenue = 'Khớp mở rộng', 5.0
 
     net_profit = revenue - price_paid
-    state.profits[winner["team"]] += net_profit
+    state.players[winner["name"]]["profit"] += net_profit
     state.result = {
-        "winner": winner["team"], "winningBid": winner["amount"], "pricePaid": price_paid,
-        "matchType": match_type, "revenue": revenue, "profit": net_profit
+        "winner": winner["name"], "archetype": winner["archetype"], "winningBid": winner["bid"], 
+        "pricePaid": price_paid, "matchType": match_type, "revenue": revenue, "profit": net_profit
     }
-    for team in state.submitted_bids:
-        state.submitted_bids[team] = False
-        state.bids[team] = 0.0
+    for name in state.players:
+        state.players[name]["submitted"] = False
+        state.players[name]["bid"] = 0.0
 
 def advance_phase():
-    # Logic to move to the next state
     if state.current_round_index == -1 and not state.show_phase1_rules:
         state.show_phase1_rules = True
     elif state.show_phase1_rules:
         state.show_phase1_rules = False
         state.current_round_index = 0
+        state.result = None
     elif state.show_phase1_summary:
         state.show_phase1_summary = False
         state.show_phase2_rules = True
+        state.result = None
     elif state.show_phase2_rules:
         state.show_phase2_rules = False
         state.current_round_index = 12
+        state.result = None
     elif state.show_final_summary:
         state.reset()
-    elif state.current_round_index == 11 and state.result: # End of Phase 1
-        state.show_phase1_summary = True
-        state.result = None
-    elif state.current_round_index >= len(SCENARIOS) - 1 and state.result: # End of Game
-        state.show_final_summary = True
-        state.result = None
-    elif state.result: # Move from result to next round
-        state.current_round_index += 1
-        state.result = None
-    else: # If NEXT_PHASE called during bidding, force auction
+    elif state.result:
+        if state.current_round_index == 11:
+            state.show_phase1_summary = True
+            state.result = None
+        elif state.current_round_index >= len(SCENARIOS) - 1:
+            state.show_final_summary = True
+            state.result = None
+        else:
+            state.current_round_index += 1
+            state.result = None
+    else:
         execute_auction()
 
-    # Manage Timer
     stop_timer()
-    if 0 <= state.current_round_index < len(SCENARIOS) and not state.result and not any([state.show_phase1_rules, state.show_phase2_rules, state.show_phase1_summary, state.show_final_summary]):
-        start_timer(90) # Start 90s bidding timer
+    if (0 <= state.current_round_index < len(SCENARIOS) and not state.result and 
+        not any([state.show_phase1_rules, state.show_phase2_rules, state.show_phase1_summary, state.show_final_summary])):
+        start_timer(90)
     elif state.result:
-        start_timer(15) # Start 15s auto-next timer for result screen
+        start_timer(15)
 
 async def run_timer():
     try:
@@ -183,39 +185,34 @@ def stop_timer():
         timer_task = None
     state.time_left = 0
 
-# --- WebSocket Endpoint ---
-
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     await websocket.send_json({"type": "STATE_UPDATE", "payload": state.get_dict()})
-    
     try:
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)
             msg_type, payload = message.get("type"), message.get("payload")
-            
-            if msg_type == "SUBMIT_BID":
-                team, amount = payload.get("team"), float(payload.get("amount", 0))
-                state.bids[team], state.submitted_bids[team] = amount, True
-                if all(state.submitted_bids.values()):
+            if msg_type == "JOIN_GAME":
+                name, archetype = payload.get("name"), payload.get("archetype")
+                if name not in state.players:
+                    state.players[name] = {"archetype": archetype, "profit": 0.0, "bid": 0.0, "submitted": False}
+                await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
+            elif msg_type == "SUBMIT_BID":
+                name, amount = payload.get("name"), float(payload.get("amount", 0))
+                if name in state.players:
+                    state.players[name]["bid"], state.players[name]["submitted"] = amount, True
+                if all(p["submitted"] for p in state.players.values()):
                     advance_phase()
                 await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
-                
-            elif msg_type == "FORCE_AUCTION":
+            elif msg_type == "FORCE_AUCTION" or msg_type == "NEXT_PHASE":
                 advance_phase()
                 await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
-
-            elif msg_type == "NEXT_PHASE":
-                advance_phase()
-                await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
-                
             elif msg_type == "RESTART":
                 stop_timer()
                 state.reset()
                 await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
-
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
