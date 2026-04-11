@@ -18,5 +18,7 @@ RUN npm run build
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
+# Include the custom Nginx config for cache-busting
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
