@@ -219,8 +219,8 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
 
   const hasMeta = useMemo(() => !!lessonMeta?.api_route, [lessonMeta])
   const DedicatedSimulationModule = useMemo(() => {
-    // Standardize the string to avoid mismatch due to whitespace or casing
-    const mod = (lessonMeta?.simulation_module || '').trim().toLowerCase();
+    // Standardize the string to avoid mismatch due to whitespace, casing, or hidden characters
+    const mod = (lessonMeta?.simulation_module || '').toString().trim().toLowerCase();
     
     if (mod === 'class5-kmeans') return Class5ClusteringSimulation;
     if (mod === 'midterm-test') return MidtermTestSimulation;
@@ -230,10 +230,9 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
   }, [lessonMeta?.simulation_module])
 
   const DedicatedProjectModule = useMemo(() => {
-    if (lessonMeta?.project_module === 'final-project-studio') {
-      return FinalProjectStudio
-    }
-    return null
+    const mod = (lessonMeta?.project_module || '').toString().trim().toLowerCase();
+    if (mod === 'final-project-studio') return FinalProjectStudio;
+    return null;
   }, [lessonMeta?.project_module])
 
   async function runSimulation() {
@@ -333,6 +332,12 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
         <>
           {DedicatedSimulationModule ? (
             <DedicatedSimulationModule apiBaseUrl={apiBaseUrl} apiRoute={lessonMeta?.api_route} />
+          ) : lessonMeta?.simulation_module ? (
+            <div className="section-shell">
+              <p className="text-red-500 font-bold text-center py-4">
+                ERROR: The simulation module "{lessonMeta.simulation_module}" was requested by the metadata but is not yet supported in this version of the frontend. Please verify you are running the latest build.
+              </p>
+            </div>
           ) : (
             <div className="section-shell space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
