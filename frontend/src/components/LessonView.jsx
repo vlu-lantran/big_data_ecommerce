@@ -219,8 +219,9 @@ export default function LessonView({ apiBaseUrl, lessonFolder, lessonMeta }) {
 
   const hasMeta = useMemo(() => !!lessonMeta?.api_route, [lessonMeta])
   const DedicatedSimulationModule = useMemo(() => {
-    // Standardize the string to avoid mismatch due to whitespace, casing, or hidden characters
+    console.log("LessonMeta Metadata:", lessonMeta);
     const mod = (lessonMeta?.simulation_module || '').toString().trim().toLowerCase();
+    console.log("Detected Simulation Module Key:", mod);
     
     if (mod === 'class5-kmeans') return Class5ClusteringSimulation;
     if (mod === 'midterm-test') return MidtermTestSimulation;

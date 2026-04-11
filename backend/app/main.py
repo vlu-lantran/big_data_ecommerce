@@ -25,24 +25,28 @@ app.add_middleware(
 
 
 def _resolve_bucket_path() -> Path:
-    # Primary source for container/local overrides.
     configured_path = os.getenv("MOCK_GCS_BUCKET_PATH")
+    logger.info(f"MOCK_GCS_BUCKET_PATH env: {configured_path}")
+    
     if configured_path:
         configured = Path(configured_path).resolve()
         if configured.exists():
+            logger.info(f"Resolved bucket path via env: {configured}")
             return configured
-        raise FileNotFoundError(
-            f"MOCK_GCS_BUCKET_PATH points to missing path: {configured}"
-        )
+        logger.warning(f"MOCK_GCS_BUCKET_PATH points to missing path: {configured}")
 
     current = Path(__file__).resolve()
     candidates = [
-        current.parents[2] / "mock_gcs_bucket",  # local workspace
-        current.parents[1] / "mock_gcs_bucket",  # container build layout
+        current.parents[2] / "mock_gcs_bucket",
+        current.parents[1] / "mock_gcs_bucket",
+        Path("/data/mock_gcs_bucket"),
     ]
+    
     for candidate in candidates:
+        logger.info(f"Checking candidate bucket path: {candidate} (exists: {candidate.exists()})")
         if candidate.exists():
             return candidate
+            
     raise FileNotFoundError("Could not locate mock_gcs_bucket directory.")
 
 
