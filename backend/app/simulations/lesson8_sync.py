@@ -9,24 +9,44 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/simulations/lesson-8-sync", tags=["lesson8-sync"])
 
-# --- Simulation State Management ---
+# --- Simulation Data Logic ---
 
-def load_scenarios():
+SCENARIOS_CACHE = []
+
+def load_scenarios_from_disk():
     env_path = os.getenv("MOCK_GCS_BUCKET_PATH")
+    
+    # Try multiple candidate paths for robustness in Cloud Run
+    candidates = []
     if env_path:
-        path = Path(env_path) / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json"
-        if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+        p = Path(env_path)
+        candidates.append(p / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json")
+        candidates.append(p / "lesson-8-lab-web-advertising" / "scenarios.json")
+    
+    candidates.append(Path("/data/mock_gcs_bucket/classes/lesson-8-lab-web-advertising/scenarios.json"))
+    candidates.append(Path("/data/mock_gcs_bucket/lesson-8-lab-web-advertising/scenarios.json"))
+    candidates.append(Path(__file__).resolve().parents[3] / "mock_gcs_bucket" / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json")
 
-    current = Path(__file__).resolve()
-    path = current.parents[3] / "mock_gcs_bucket" / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json"
-    if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+    for path in candidates:
+        if path and path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    logger.info(f"SUCCESS: Loaded {len(data)} scenarios from {path}")
+                    return data
+            except Exception as e:
+                logger.error(f"ERROR reading scenarios from {path}: {e}")
+    
+    logger.error("CRITICAL: Could not find scenarios.json in any candidate path!")
     return []
 
-SCENARIOS = load_scenarios()
+def get_scenarios():
+    global SCENARIOS_CACHE
+    if not SCENARIOS_CACHE:
+        SCENARIOS_CACHE = load_scenarios_from_disk()
+    return SCENARIOS_CACHE
+
+# --- State Management ---
 
 class SimulationState:
     def __init__(self):
@@ -43,6 +63,7 @@ class SimulationState:
         self.time_left = 0
 
     def get_dict(self):
+        scenarios = get_scenarios()
         return {
             "currentRoundIndex": self.current_round_index,
             "players": self.players,
@@ -52,8 +73,8 @@ class SimulationState:
             "showPhase2Rules": self.show_phase2_rules,
             "showFinalSummary": self.show_final_summary,
             "timeLeft": self.time_left,
-            "scenariosCount": len(SCENARIOS),
-            "currentScenario": SCENARIOS[self.current_round_index] if 0 <= self.current_round_index < len(SCENARIOS) else None
+            "scenariosCount": len(scenarios),
+            "currentScenario": scenarios[self.current_round_index] if 0 <= self.current_round_index < len(scenarios) else None
         }
 
 state = SimulationState()
@@ -81,10 +102,11 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 def execute_auction():
-    if state.current_round_index < 0 or state.current_round_index >= len(SCENARIOS):
+    scenarios = get_scenarios()
+    if state.current_round_index < 0 or state.current_round_index >= len(scenarios):
         return
     
-    scenario = SCENARIOS[state.current_round_index]
+    scenario = scenarios[state.current_round_index]
     bidding_players = [{"name": name, "bid": data["bid"], "archetype": data["archetype"]} 
                        for name, data in state.players.items()]
     
@@ -122,6 +144,11 @@ def execute_auction():
         state.players[name]["bid"] = 0.0
 
 def advance_phase():
+    scenarios = get_scenarios()
+    if not scenarios:
+        logger.error("Cannot advance: No scenarios loaded.")
+        return
+
     if state.current_round_index == -1 and not state.show_phase1_rules:
         state.show_phase1_rules = True
     elif state.show_phase1_rules:
@@ -142,7 +169,7 @@ def advance_phase():
         if state.current_round_index == 11:
             state.show_phase1_summary = True
             state.result = None
-        elif state.current_round_index >= len(SCENARIOS) - 1:
+        elif state.current_round_index >= len(scenarios) - 1:
             state.show_final_summary = True
             state.result = None
         else:
@@ -152,7 +179,7 @@ def advance_phase():
         execute_auction()
 
     stop_timer()
-    if (0 <= state.current_round_index < len(SCENARIOS) and not state.result and 
+    if (0 <= state.current_round_index < len(scenarios) and not state.result and 
         not any([state.show_phase1_rules, state.show_phase2_rules, state.show_phase1_summary, state.show_final_summary])):
         start_timer(90)
     elif state.result:

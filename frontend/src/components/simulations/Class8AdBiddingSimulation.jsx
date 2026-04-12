@@ -341,6 +341,15 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
           </div>
         </div>
       )}
+
+      {/* ERROR FALLBACK */}
+      {gameState.currentRoundIndex >= 0 && !gameState.showPhase1Rules && !gameState.showPhase1Summary && !gameState.showPhase2Rules && !gameState.showFinalSummary && !scenario && (
+        <div className="text-center py-20 bg-red-50 border-2 border-red-200 rounded-[3rem]">
+          <h3 className="text-2xl font-black text-red-600 mb-4">CRITICAL DATA ERROR</h3>
+          <p className="text-red-500 font-bold mb-8">The backend failed to provide the user profile for Round {gameState.currentRoundIndex + 1}.</p>
+          {role === 'teacher' && <button onClick={restartSimulation} className="bg-red-600 text-white px-10 py-4 rounded-2xl font-black">RESTART SERVER STATE</button>}
+        </div>
+      )}
     </div>
   )
 }
