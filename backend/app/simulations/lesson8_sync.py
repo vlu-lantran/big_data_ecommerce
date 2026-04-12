@@ -13,32 +13,52 @@ router = APIRouter(prefix="/api/simulations/lesson-8-sync", tags=["lesson8-sync"
 
 SCENARIOS_CACHE = []
 
+def _find_bucket_root() -> Path:
+    # 1. Try Environment Variable (Docker Compose/Cloud Run Config)
+    configured_path = os.getenv("MOCK_GCS_BUCKET_PATH")
+    if configured_path:
+        path = Path(configured_path).resolve()
+        if path.exists():
+            return path
+
+    # 2. Try Standard Docker/FUSE Mount Point
+    fuse_path = Path("/data/mock_gcs_bucket")
+    if fuse_path.exists():
+        return fuse_path
+
+    # 3. Try Local Development Path (relative to this file)
+    # File is at: backend/app/simulations/lesson8_sync.py
+    # Root is 3 parents up -> mock_gcs_bucket
+    local_path = Path(__file__).resolve().parents[3] / "mock_gcs_bucket"
+    if local_path.exists():
+        return local_path
+        
+    return Path(".")
+
 def load_scenarios_from_disk():
-    env_path = os.getenv("MOCK_GCS_BUCKET_PATH")
-    candidates = []
-    if env_path:
-        p = Path(env_path)
-        candidates.append(p / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json")
-        candidates.append(p / "lesson-8-lab-web-advertising" / "scenarios.json")
+    root = _find_bucket_root()
     
-    candidates.append(Path("/data/mock_gcs_bucket/classes/lesson-8-lab-web-advertising/scenarios.json"))
-    candidates.append(Path("/data/mock_gcs_bucket/lesson-8-lab-web-advertising/scenarios.json"))
+    # The absolute path we verified: mock_gcs_bucket/classes/lesson-8-lab-web-advertising/scenarios.json
+    # In GCS, it might be at root if they mounted the 'classes' folder, 
+    # but the user said they mounted the PARENT of classes.
     
-    # Adjusted parent logic for container structure
-    current_file = Path(__file__).resolve()
-    candidates.append(current_file.parents[3] / "mock_gcs_bucket" / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json")
+    candidates = [
+        root / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json",
+        root / "lesson-8-lab-web-advertising" / "scenarios.json", # Backup if 'classes' swallowed
+    ]
 
     for path in candidates:
-        if path and path.exists():
+        logger.info(f"Probing for scenarios at: {path}")
+        if path.exists():
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     logger.info(f"SUCCESS: Loaded {len(data)} scenarios from {path}")
                     return data
             except Exception as e:
-                logger.error(f"ERROR reading scenarios from {path}: {e}")
+                logger.error(f"ERROR parsing scenarios at {path}: {e}")
     
-    logger.error(f"CRITICAL: Could not find scenarios.json. Checked: {[str(c) for c in candidates if c]}")
+    logger.error(f"CRITICAL: scenarios.json NOT FOUND. Checked: {[str(c) for c in candidates]}")
     return []
 
 def get_scenarios():
@@ -151,7 +171,7 @@ async def advance_phase_with_broadcast():
     elif state.show_phase1_rules:
         scenarios = get_scenarios()
         if not scenarios:
-            await manager.broadcast({"type": "ERROR", "payload": "Cannot start: scenarios.json not found on server."})
+            await manager.broadcast({"type": "ERROR", "payload": "Scenarios not found. Check server logs for path details."})
             return
         state.show_phase1_rules = False
         state.current_round_index = 0
