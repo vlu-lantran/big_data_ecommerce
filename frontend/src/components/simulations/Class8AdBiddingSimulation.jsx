@@ -1,12 +1,25 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 
 export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
-  const [role, setRole] = useState(null); 
-  const [myBrandName, setMyBrandName] = useState('');
-  const [myArchetype, setMyArchetype] = useState(null);
+  // Persistence Keys
+  const STORAGE_KEY_ROLE = 'rtb_role';
+  const STORAGE_KEY_BRAND = 'rtb_brand';
+  const STORAGE_KEY_ARCHETYPE = 'rtb_archetype';
+
+  const archetypeLabels = {
+    SneakerX: "Giày Sneaker & Thời trang",
+    TechGadget: "Đồ công nghệ & Phụ kiện",
+    GlowBeauty: "Mỹ phẩm & Chăm sóc da",
+    FitGear: "Dụng cụ & Đồ tập Gym"
+  };
+
+  const [role, setRole] = useState(() => localStorage.getItem(STORAGE_KEY_ROLE)); 
+  const [myBrandName, setMyBrandName] = useState(() => localStorage.getItem(STORAGE_KEY_BRAND) || '');
+  const [myArchetype, setMyArchetype] = useState(() => localStorage.getItem(STORAGE_KEY_ARCHETYPE));
   const [isJoined, setIsJoined] = useState(false);
   const [loading, setLoading] = useState(true);
   const [myBid, setMyBid] = useState('');
+  const [isDisconnected, setIsDisconnected] = useState(false);
   
   const [gameState, setGameState] = useState({
     currentRoundIndex: -1,
@@ -22,15 +35,45 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
   });
 
   const socketRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
 
+  // Persistence Effect
   useEffect(() => {
+    if (role) localStorage.setItem(STORAGE_KEY_ROLE, role);
+    if (myBrandName) localStorage.setItem(STORAGE_KEY_BRAND, myBrandName);
+    if (myArchetype) localStorage.setItem(STORAGE_KEY_ARCHETYPE, myArchetype);
+  }, [role, myBrandName, myArchetype]);
+
+  const connectWebSocket = useCallback(() => {
+    if (socketRef.current) socketRef.current.close();
+
     const wsUrl = apiBaseUrl.replace('http', 'ws') + '/api/simulations/lesson-8-sync/ws';
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log('Connected to simulation server');
+      console.log('RTB Arena: Connection Established');
       setLoading(false);
+      setIsDisconnected(false);
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+
+      // Heartbeat
+      const heartbeat = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'PING' }));
+        } else {
+          clearInterval(heartbeat);
+        }
+      }, 30000);
+
+      // Auto-rejoin
+      if (myBrandName && myArchetype) {
+        socket.send(JSON.stringify({ 
+          type: 'JOIN_GAME', 
+          payload: { name: myBrandName, archetype: myArchetype } 
+        }));
+        setIsJoined(true);
+      }
     };
 
     socket.onmessage = (event) => {
@@ -40,16 +83,41 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
       } else if (message.type === 'TIMER_TICK') {
         setGameState(prev => ({ ...prev, timeLeft: message.payload.timeLeft }));
       } else if (message.type === 'ERROR') {
-        alert("CRITICAL ERROR: " + message.payload);
+        alert("SERVER ALERT: " + message.payload);
       }
     };
 
-    return () => socket.close();
-  }, [apiBaseUrl]);
+    socket.onclose = () => {
+      console.warn('RTB Arena: Connection Lost. Retrying in 3s...');
+      setIsDisconnected(true);
+      reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
+    };
+
+    socket.onerror = (err) => {
+      console.error('RTB Arena: WebSocket Error', err);
+      socket.close();
+    };
+  }, [apiBaseUrl, myBrandName, myArchetype]);
+
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      if (socketRef.current) socketRef.current.close();
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    };
+  }, [connectWebSocket]);
+
+  const sortedLeaderboard = useMemo(() => {
+    return Object.entries(gameState.players).map(([name, data]) => ({
+      name, ...data, total: 50 + data.profit
+    })).sort((a, b) => b.total - a.total);
+  }, [gameState.players]);
 
   const sendAction = (type, payload = {}) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({ type, payload }));
+    } else {
+      setIsDisconnected(true);
     }
   };
 
@@ -66,26 +134,26 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
   };
 
   const nextScenario = () => sendAction('NEXT_PHASE');
-  const restartSimulation = () => sendAction('RESTART');
+  const restartSimulation = () => {
+    localStorage.clear();
+    window.location.reload();
+  };
+  const triggerRestartOnServer = () => sendAction('RESTART');
   const forceAuction = () => sendAction('FORCE_AUCTION');
 
-  const renderLeaderboard = (title, description, btnText) => {
-    const sortedPlayers = Object.entries(gameState.players).map(([name, data]) => ({
-      name, ...data, total: 50 + data.profit
-    })).sort((a, b) => b.total - a.total);
-
+  const renderLeaderboardUI = (title, description, btnText) => {
     return (
       <div className="bg-white p-6 rounded-2xl border border-blue-200 text-center shadow-md animate-fade-up max-w-2xl mx-auto">
         <h4 className="text-2xl font-bold text-slate-800 mb-2">🏆 {title}</h4>
         <p className="text-slate-600 mb-6">{description}</p>
         <div className="space-y-3 text-left">
-          {sortedPlayers.slice(0, 10).map((p, index) => (
+          {sortedLeaderboard.slice(0, 10).map((p, index) => (
             <div key={p.name} className={`flex justify-between items-center p-4 rounded-xl border ${index < 3 ? 'bg-yellow-50 border-yellow-200 shadow-sm' : 'bg-slate-50 border-slate-200'}`}>
               <div className="flex items-center gap-3">
                 <span className="text-xl">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}</span>
                 <div>
                   <p className="font-bold text-slate-800 leading-none">{p.name}</p>
-                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">{p.archetype}</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">{archetypeLabels[p.archetype] || p.archetype}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -123,13 +191,18 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
       ) : (
         <div className="bg-blue-600 text-white p-6 rounded-2xl shadow-xl text-center animate-pulse">
           <p className="font-black text-xl uppercase italic mb-1">Giảng viên đang phổ biến luật chơi</p>
-          <p className="text-sm font-bold opacity-80 uppercase tracking-widest text-blue-100">Hãy chuẩn bị, vòng đấu sẽ bắt đầu sau ít phút...</p>
+          <p className="text-sm font-bold opacity-80 uppercase tracking-widest text-blue-100">Vui lòng lắng nghe hướng dẫn từ Giảng viên...</p>
         </div>
       )}
     </div>
   );
 
-  if (loading) return <div className="text-center py-12 text-slate-500 font-bold uppercase tracking-widest animate-pulse">Neural Link Active... Connecting to RTB Arena...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-slate-500 font-black uppercase tracking-[0.2em] animate-pulse">Neural Link Handshake...</p>
+    </div>
+  );
 
   if (!role) {
     return (
@@ -151,17 +224,17 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
     return (
       <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-2xl max-w-xl mx-auto animate-fade-up">
         <h3 className="text-3xl font-black text-slate-800 mb-2 italic uppercase">ĐĂNG KÝ BRAND</h3>
-        <p className="text-slate-400 font-bold text-sm mb-10 uppercase tracking-widest">Thiết lập danh tính thương hiệu của bạn</p>
+        <p className="text-slate-400 font-bold text-sm mb-10 uppercase tracking-widest">Dữ liệu của bạn sẽ được tự động khôi phục nếu lag.</p>
         <div className="space-y-8">
           <div>
             <label className="block text-xs font-black text-slate-400 uppercase mb-3 ml-1 tracking-widest">Tên thương hiệu</label>
-            <input type="text" className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:border-blue-600 outline-none font-black text-xl tabular-nums shadow-inner" placeholder="NIKE / APPLE / ..." value={myBrandName} onChange={e => setMyBrandName(e.target.value)} />
+            <input type="text" className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:border-blue-600 outline-none font-black text-xl" placeholder="NIKE / APPLE / ..." value={myBrandName} onChange={e => setMyBrandName(e.target.value)} />
           </div>
           <div>
             <label className="block text-xs font-black text-slate-400 uppercase mb-3 ml-1 tracking-widest">Archetype</label>
             <div className="grid grid-cols-2 gap-4">
               {['SneakerX', 'TechGadget', 'GlowBeauty', 'FitGear'].map(t => (
-                <button key={t} onClick={() => setMyArchetype(t)} className={`p-5 rounded-[1.5rem] border-2 transition-all font-black text-xs uppercase tracking-widest ${myArchetype === t ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-95' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-300'}`}>
+                <button key={t} onClick={() => setMyArchetype(t)} className={`p-5 rounded-[1.5rem] border-2 transition-all font-black text-xs uppercase tracking-widest ${myArchetype === t ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-400'}`}>
                   {t}
                 </button>
               ))}
@@ -181,15 +254,28 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
   const submittedCount = Object.values(gameState.players).filter(p => p.submitted).length;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto relative">
+      {/* DISCONNECTED OVERLAY */}
+      {isDisconnected && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center">
+          <div className="bg-white p-8 rounded-3xl text-center shadow-2xl animate-bounce-in max-w-xs">
+            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h4 className="text-xl font-black text-slate-800 uppercase italic">MẤT KẾT NỐI</h4>
+            <p className="text-slate-500 text-sm font-bold mt-2">Đang cố gắng kết nối lại với Sàn đấu...</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-lg">
         <div className="flex items-center gap-5">
           <div className="bg-slate-900 text-white w-14 h-14 rounded-2xl flex items-center justify-center font-black italic text-2xl rotate-3 shadow-xl">RTB</div>
           <div>
             <h3 className="text-xl font-black text-slate-800 uppercase italic leading-none">{role === 'teacher' ? 'COMMANDER' : myBrandName}</h3>
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-tighter border border-blue-100">{role === 'teacher' ? 'ADMIN' : myArchetype}</span>
-              <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-tighter">{playerCount} MARKETERS ACTIVE</span>
+              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-tighter border border-blue-100">
+                {role === 'teacher' ? 'ADMIN' : archetypeLabels[myArchetype] || myArchetype}
+              </span>
+              <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-tighter">{playerCount} MARKETERS</span>
             </div>
           </div>
         </div>
@@ -202,11 +288,14 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
           )}
           {role === 'teacher' && (
             <div className="flex gap-2">
-              <button onClick={restartSimulation} className="px-4 py-3 text-[10px] font-black text-red-600 bg-red-50 hover:bg-red-100 rounded-2xl uppercase italic border border-red-100">RESET</button>
+              <button onClick={triggerRestartOnServer} className="px-4 py-3 text-[10px] font-black text-red-600 bg-red-50 hover:bg-red-100 rounded-2xl uppercase italic border border-red-100">RESTART CLASS</button>
               <button onClick={nextScenario} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black shadow-xl hover:scale-105 transition-all text-xs uppercase italic tracking-widest">
                 {gameState.currentRoundIndex === -1 ? 'BẮT ĐẦU BUỔI HỌC' : 'TIẾP THEO →'}
               </button>
             </div>
+          )}
+          {role === 'student' && (
+            <button onClick={restartSimulation} className="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest transition-colors">Leave Game</button>
           )}
         </div>
       </div>
@@ -219,11 +308,11 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
           "Tránh Winner's Curse: Nếu bạn đặt giá thầu quá cao vượt quá giá trị chuyển đổi ($15), bạn sẽ bị lỗ ngay cả khi thắng cuộc. Hãy tính toán kỹ lợi nhuận biên.",
           "Cấu trúc Doanh thu: Nhận $15 nếu Archetype của bạn khớp 'Chính xác' với Intent của người dùng. Nhận $5 nếu 'Khớp mở rộng' (có liên quan gián tiếp). Nhận $0 nếu không liên quan.",
           "Dữ liệu người dùng: Trong giai đoạn này, bạn có đầy đủ thông tin về Tuổi, Hoạt động và Ý định mua sắm nhờ vào Cookie bên thứ ba. Hãy tận dụng tối đa dữ liệu này.",
-          "Quản lý Ngân sách: Bạn bắt đầu với $50. Mục tiêu không phải là thắng nhiều nhất, mà là có Lợi nhuận ròng (Net Profit) cao nhất sau 12 vòng đấu."
+          "Quản lý Ngân sách: Bạn bắt đầu với $50. Mỗi vòng có 33 giây để đặt thầu. Mục tiêu không phải là thắng nhiều nhất, mà là có Lợi nhuận ròng (Net Profit) cao nhất sau 12 vòng đấu."
         ], 
         "KÍCH HOẠT VÒNG 1"
       )}
-      {gameState.showPhase1Summary && renderLeaderboard("Tổng kết Giai đoạn 1", "Phân tích hiệu quả quảng cáo (ROAS) trước khi bước vào kỷ nguyên bảo mật dữ liệu.", "TIẾP THEO: QUY TẮC GIAI ĐOẠN 2")}
+      {gameState.showPhase1Summary && renderLeaderboardUI("Tổng kết Giai đoạn 1", "Phân tích hiệu quả quảng cáo (ROAS) trước khi bước vào kỷ nguyên bảo mật dữ liệu.", "TIẾP THEO: QUY TẮC GIAI ĐOẠN 2")}
       {gameState.showPhase2Rules && renderRules(
         "Giai đoạn 2: Sự trỗi dậy của Thuật toán", 
         "Kỷ nguyên Privacy & Nhắm mục tiêu Ngữ cảnh", 
@@ -236,7 +325,7 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
         ], 
         "KÍCH HOẠT VÒNG 13"
       )}
-      {gameState.showFinalSummary && renderLeaderboard("CHAMPIONS ARENA", "Final results. Glory to the data-driven!", "KHỞI ĐỘNG LẠI")}
+      {gameState.showFinalSummary && renderLeaderboardUI("CHAMPIONS ARENA", "Final results. Glory to the data-driven!", "RESET CLASS")}
 
       {isPlaying && (
         <div className="space-y-8 animate-fade-up">
@@ -282,12 +371,42 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
             </div>
             <div className="bg-slate-900 text-white p-10 rounded-[3rem] shadow-2xl flex flex-col justify-between relative overflow-hidden">
                <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-blue-600 rounded-full opacity-10 blur-[100px]"></div>
-               <div>
-                 <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] mb-10 italic">Portfolio Stats</h4>
-                 <div className="mb-10"><p className="text-[10px] font-black text-slate-500 uppercase leading-none mb-3">Total Net Profit</p><p className={`text-5xl font-black tabular-nums italic ${gameState.players[myBrandName]?.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>${gameState.players[myBrandName]?.profit.toFixed(2)}</p></div>
-                 <div><p className="text-[10px] font-black text-slate-500 uppercase leading-none mb-3">Current Budget</p><p className="text-3xl font-black tabular-nums text-blue-400">${(50 + (gameState.players[myBrandName]?.profit || 0)).toFixed(2)}</p></div>
-               </div>
-               <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mt-10 backdrop-blur-md"><p className="text-[10px] font-black text-blue-400 uppercase italic mb-2">Strategy Intelligence</p><p className="text-xs font-bold text-slate-300 leading-relaxed italic opacity-80">{scenario.round < 12 ? "Exact Match ($15) is your priority. Don't overbid!" : "Cookie blockage detected. Guess intent from user activity profile."}</p></div>
+               {role === 'student' ? (
+                 <>
+                   <div>
+                     <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] mb-8 italic">Your Portfolio</h4>
+                     <div className="mb-6 pb-6 border-b border-white/10">
+                        <p className="text-[10px] font-black text-slate-500 uppercase leading-none mb-3">Product Category</p>
+                        <p className="text-xl font-black text-white italic">{archetypeLabels[myArchetype]}</p>
+                     </div>
+                     <div className="mb-8"><p className="text-[10px] font-black text-slate-500 uppercase leading-none mb-3">Total Net Profit</p><p className={`text-5xl font-black tabular-nums italic ${gameState.players[myBrandName]?.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>${gameState.players[myBrandName]?.profit.toFixed(2)}</p></div>
+                     <div><p className="text-[10px] font-black text-slate-500 uppercase leading-none mb-3">Current Budget</p><p className="text-3xl font-black tabular-nums text-blue-400">${(50 + (gameState.players[myBrandName]?.profit || 0)).toFixed(2)}</p></div>
+                   </div>
+                   <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mt-10 backdrop-blur-md"><p className="text-[10px] font-black text-blue-400 uppercase italic mb-2">Strategy Intelligence</p><p className="text-xs font-bold text-slate-300 leading-relaxed italic opacity-80">{scenario.round < 12 ? "Exact Match ($15) is your priority. Don't overbid!" : "Cookie blockage detected. Guess intent from user activity profile."}</p></div>
+                 </>
+               ) : (
+                 <>
+                   <div>
+                     <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] mb-10 italic">Live Top 5</h4>
+                     <div className="space-y-4">
+                        {sortedLeaderboard.slice(0, 5).map((p, i) => (
+                          <div key={p.name} className="flex justify-between items-center group">
+                            <div className="flex items-center gap-3">
+                              <span className="font-black text-slate-600 text-xs italic group-hover:text-blue-400">{i+1}</span>
+                              <span className="font-bold text-sm uppercase tracking-tight">{p.name}</span>
+                            </div>
+                            <span className="font-black tabular-nums text-emerald-400 text-sm">${(50+p.profit).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        {playerCount === 0 && <p className="text-xs text-slate-500 italic">Waiting for brands to register...</p>}
+                     </div>
+                   </div>
+                   <div className="mt-10 pt-10 border-t border-white/10">
+                      <p className="text-[10px] font-black text-slate-500 uppercase italic">Command Note:</p>
+                      <p className="text-xs text-slate-400 mt-2 leading-relaxed">You can force the auction if some students are unresponsive to maintain class momentum.</p>
+                   </div>
+                 </>
+               )}
             </div>
           </div>
 
@@ -308,7 +427,7 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
               <div className="bg-slate-900 p-12 rounded-[4rem] shadow-2xl text-white">
                 <h4 className="text-xs font-black text-blue-400 uppercase tracking-[0.4em] mb-10 italic">Current Top Performers</h4>
                 <div className="space-y-4">
-                  {Object.entries(gameState.players).map(([name, d]) => ({ name, total: 50 + d.profit })).sort((a, b) => b.total - a.total).slice(0, 5).map((p, i) => (
+                  {sortedLeaderboard.slice(0, 5).map((p, i) => (
                     <div key={p.name} className={`flex justify-between items-center p-5 rounded-[2rem] border-2 transition-all ${i === 0 ? 'bg-white/10 border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'bg-white/5 border-white/5'}`}>
                       <div className="flex items-center gap-5"><span className={`text-2xl font-black italic ${i === 0 ? 'text-blue-400' : 'text-slate-600'}`}>{i + 1}</span><span className="font-black text-xl italic uppercase tracking-tighter">{p.name}</span></div>
                       <span className="font-black text-2xl italic tabular-nums text-emerald-400">${p.total.toFixed(2)}</span>
@@ -328,7 +447,7 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
           <p className="text-slate-400 font-black max-w-md mx-auto mb-16 uppercase tracking-[0.5em] italic opacity-60">Global Ad Exchange Simulator</p>
           <div className="max-w-2xl mx-auto grid grid-cols-3 gap-6 mb-16 relative z-10 px-10">
              <div className="p-8 bg-slate-50 rounded-[2.5rem] shadow-inner border border-slate-100"><p className="text-4xl font-black text-slate-900 mb-2">{playerCount}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Registered</p></div>
-             <div className="p-8 bg-slate-50 rounded-[2.5rem] shadow-inner border border-slate-100"><p className="text-4xl font-black text-slate-900 mb-2">90s</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Bidding Window</p></div>
+             <div className="p-8 bg-slate-50 rounded-[2.5rem] shadow-inner border border-slate-100"><p className="text-4xl font-black text-slate-900 mb-2">33s</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Bidding Window</p></div>
              <div className="p-8 bg-slate-50 rounded-[2.5rem] shadow-inner border border-slate-100"><p className="text-4xl font-black text-slate-900 mb-2">27</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Match Rounds</p></div>
           </div>
           <div className="text-center">
@@ -349,7 +468,7 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
         <div className="text-center py-20 bg-red-50 border-2 border-red-200 rounded-[3rem]">
           <h3 className="text-2xl font-black text-red-600 mb-4">CRITICAL DATA ERROR</h3>
           <p className="text-red-500 font-bold mb-8">The backend failed to provide the user profile for Round {gameState.currentRoundIndex + 1}.</p>
-          {role === 'teacher' && <button onClick={restartSimulation} className="bg-red-600 text-white px-10 py-4 rounded-2xl font-black">RESTART SERVER STATE</button>}
+          {role === 'teacher' && <button onClick={triggerRestartOnServer} className="bg-red-600 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase italic">RESTART SERVER STATE</button>}
         </div>
       )}
     </div>

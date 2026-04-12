@@ -9,7 +9,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/simulations/lesson-8-sync", tags=["lesson8-sync"])
 
-# --- Hardcoded Simulation Data (No File Dependencies) ---
+# --- Hardcoded Simulation Data ---
 
 SCENARIOS = [
   { "round": 1, "userId": 1042, "age": 25, "activity": "đọc tạp chí thể dục", "intent": "giày chạy bộ", "notes": "Khởi đầu dễ dàng.", "exact": "SneakerX", "broad": "FitGear", "miss": "TechGadget, GlowBeauty" },
@@ -87,11 +87,15 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
+        bad_links = []
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
             except Exception:
-                pass
+                bad_links.append(connection)
+        
+        for link in bad_links:
+            self.disconnect(link)
 
 manager = ConnectionManager()
 
@@ -170,9 +174,9 @@ async def advance_phase_with_broadcast():
     stop_timer()
     if (0 <= state.current_round_index < len(SCENARIOS) and not state.result and 
         not any([state.show_phase1_rules, state.show_phase2_rules, state.show_phase1_summary, state.show_final_summary])):
-        start_timer(90)
+        start_timer(33)
     elif state.result:
-        start_timer(15)
+        start_timer(7)
     
     await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
 
@@ -205,17 +209,27 @@ def stop_timer():
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
+    # Initial catch-up for reconnecting clients
     await websocket.send_json({"type": "STATE_UPDATE", "payload": state.get_dict()})
+    
     try:
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)
             msg_type, payload = message.get("type"), message.get("payload")
+            
+            if msg_type == "PING":
+                await websocket.send_json({"type": "PONG"})
+                continue
+
             if msg_type == "JOIN_GAME":
                 name, archetype = payload.get("name"), payload.get("archetype")
                 if name not in state.players:
                     state.players[name] = {"archetype": archetype, "profit": 0.0, "bid": 0.0, "submitted": False}
+                else:
+                    state.players[name]["archetype"] = archetype
                 await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
+
             elif msg_type == "SUBMIT_BID":
                 name, amount = payload.get("name"), float(payload.get("amount", 0))
                 if name in state.players:
@@ -224,14 +238,16 @@ async def websocket_endpoint(websocket: WebSocket):
                     await advance_phase_with_broadcast()
                 else:
                     await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
+
             elif msg_type == "FORCE_AUCTION" or msg_type == "NEXT_PHASE":
                 await advance_phase_with_broadcast()
+
             elif msg_type == "RESTART":
                 stop_timer()
                 state.reset()
                 await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    except Exception as e:
-        logger.error(f"WS Error: {e}")
+    except Exception:
         manager.disconnect(websocket)
