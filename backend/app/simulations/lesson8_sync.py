@@ -9,63 +9,37 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/simulations/lesson-8-sync", tags=["lesson8-sync"])
 
-# --- Simulation Data Logic ---
+# --- Hardcoded Simulation Data (No File Dependencies) ---
 
-SCENARIOS_CACHE = []
-
-def _find_bucket_root() -> Path:
-    # 1. Try Environment Variable (Docker Compose/Cloud Run Config)
-    configured_path = os.getenv("MOCK_GCS_BUCKET_PATH")
-    if configured_path:
-        path = Path(configured_path).resolve()
-        if path.exists():
-            return path
-
-    # 2. Try Standard Docker/FUSE Mount Point
-    fuse_path = Path("/data/mock_gcs_bucket")
-    if fuse_path.exists():
-        return fuse_path
-
-    # 3. Try Local Development Path (relative to this file)
-    # File is at: backend/app/simulations/lesson8_sync.py
-    # Root is 3 parents up -> mock_gcs_bucket
-    local_path = Path(__file__).resolve().parents[3] / "mock_gcs_bucket"
-    if local_path.exists():
-        return local_path
-        
-    return Path(".")
-
-def load_scenarios_from_disk():
-    root = _find_bucket_root()
-    
-    # The absolute path we verified: mock_gcs_bucket/classes/lesson-8-lab-web-advertising/scenarios.json
-    # In GCS, it might be at root if they mounted the 'classes' folder, 
-    # but the user said they mounted the PARENT of classes.
-    
-    candidates = [
-        root / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json",
-        root / "lesson-8-lab-web-advertising" / "scenarios.json", # Backup if 'classes' swallowed
-    ]
-
-    for path in candidates:
-        logger.info(f"Probing for scenarios at: {path}")
-        if path.exists():
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    logger.info(f"SUCCESS: Loaded {len(data)} scenarios from {path}")
-                    return data
-            except Exception as e:
-                logger.error(f"ERROR parsing scenarios at {path}: {e}")
-    
-    logger.error(f"CRITICAL: scenarios.json NOT FOUND. Checked: {[str(c) for c in candidates]}")
-    return []
-
-def get_scenarios():
-    global SCENARIOS_CACHE
-    if not SCENARIOS_CACHE:
-        SCENARIOS_CACHE = load_scenarios_from_disk()
-    return SCENARIOS_CACHE
+SCENARIOS = [
+  { "round": 1, "userId": 1042, "age": 25, "activity": "đọc tạp chí thể dục", "intent": "giày chạy bộ", "notes": "Khởi đầu dễ dàng.", "exact": "SneakerX", "broad": "FitGear", "miss": "TechGadget, GlowBeauty" },
+  { "round": 2, "userId": 3821, "age": 30, "activity": "xem video review đồ công nghệ", "intent": "tai nghe chống ồn", "notes": "Kiểm tra khớp chính xác hoàn toàn.", "exact": "TechGadget", "broad": "None", "miss": "SneakerX, GlowBeauty, FitGear" },
+  { "round": 3, "userId": 9345, "age": 22, "activity": "lướt diễn đàn làm đẹp", "intent": "son môi thuần chay", "notes": "Kiểm tra khớp chính xác hoàn toàn.", "exact": "GlowBeauty", "broad": "None", "miss": "SneakerX, TechGadget, FitGear" },
+  { "round": 4, "userId": 2843, "age": 28, "activity": "đọc blog sức khỏe", "intent": "quần áo tập thể dục", "notes": "Xây dựng sự tự tin.", "exact": "FitGear", "broad": "SneakerX", "miss": "TechGadget, GlowBeauty" },
+  { "round": 5, "userId": 5521, "age": 45, "activity": "xem trang web mẹ và bé", "intent": "quà cho tuổi teen", "notes": "BẪY: Cơn sốt khớp mở rộng. Cám dỗ đặt giá thầu quá cao cho giá trị thấp.", "exact": "None", "broad": "ALL TEAMS", "miss": "None" },
+  { "round": 6, "userId": 8329, "age": 24, "activity": "xem diễn đàn thời trang đường phố", "intent": "giày sneaker hiếm bản giới hạn", "notes": "Phần thưởng cao cho SneakerX ngay sau một cái bẫy mở rộng.", "exact": "SneakerX", "broad": "None", "miss": "TechGadget, GlowBeauty, FitGear" },
+  { "round": 7, "userId": 1024, "age": 35, "activity": "tìm hiểu về leo núi", "intent": "bình nước thể thao", "notes": "Vòng tiêu chuẩn.", "exact": "FitGear", "broad": "SneakerX", "miss": "TechGadget, GlowBeauty" },
+  { "round": 8, "userId": 4721, "age": 21, "activity": "xem stream game", "intent": "màn hình gaming 4k", "notes": "Vòng tiêu chuẩn.", "exact": "TechGadget", "broad": "None", "miss": "SneakerX, GlowBeauty, FitGear" },
+  { "round": 9, "userId": 6512, "age": 27, "activity": "đọc bài viết chăm sóc bản thân", "intent": "các bước chăm sóc da", "notes": "Vòng tiêu chuẩn.", "exact": "GlowBeauty", "broad": "None", "miss": "SneakerX, TechGadget, FitGear" },
+  { "round": 10, "userId": 3310, "age": 19, "activity": "lướt trang tổng hợp giảm giá", "intent": "giày rẻ", "notes": "Ý định thấp, nhưng vẫn khớp chính xác.", "exact": "SneakerX", "broad": "FitGear", "miss": "TechGadget, GlowBeauty" },
+  { "round": 11, "userId": 5123, "age": 40, "activity": "đọc báo sức khỏe", "intent": "cách giảm cân", "notes": "BẪY: Ý định mơ hồ. Khớp mở rộng thường chi tiêu quá mức.", "exact": "None", "broad": "FitGear", "miss": "SneakerX, TechGadget, GlowBeauty" },
+  { "round": 12, "userId": 7731, "age": 32, "activity": "đọc trang tin tức mua sắm tổng hợp", "intent": "mua mọi thứ giảm giá", "notes": "BẪY Miền Tây Hoang Dã cuối cùng: Cám dỗ các đội dồn hết ngân sách còn lại trước giai đoạn 2.", "exact": "None", "broad": "ALL TEAMS", "miss": "None" },
+  { "round": 13, "userId": 9123, "age": 26, "activity": "xem video trang điểm", "intent": "mascara chống nước", "notes": "Thử nghiệm thuật toán.", "exact": "GlowBeauty", "broad": "None", "miss": "SneakerX, TechGadget, FitGear" },
+  { "round": 14, "userId": 2284, "age": 29, "activity": "đọc blog lập trình", "intent": "bàn phím cơ", "notes": "Thử nghiệm thuật toán.", "exact": "TechGadget", "broad": "None", "miss": "SneakerX, GlowBeauty, FitGear" },
+  { "round": 15, "userId": 4412, "age": 33, "activity": "xem lịch thi đấu thể thao", "intent": "quần đùi tập gym", "notes": "Thử nghiệm thuật toán.", "exact": "FitGear", "broad": "SneakerX", "miss": "TechGadget, GlowBeauty" },
+  { "round": 16, "userId": 8812, "age": 31, "activity": "đọc tin tức điền kinh", "intent": "đồ chạy marathon", "notes": "Thử nghiệm thuật toán.", "exact": "SneakerX", "broad": "FitGear", "miss": "TechGadget, GlowBeauty" },
+  { "round": 17, "userId": 1121, "age": 38, "activity": "lướt trang tổng hợp khuyến mãi", "intent": "ưu đãi black friday", "notes": "CÚ SỐC: Lưu lượng truy cập tăng vọt. Thuật toán đặt giá thầu mở rộng có thể chi tiêu quá mức.", "exact": "None", "broad": "ALL TEAMS", "miss": "None" },
+  { "round": 18, "userId": 2931, "age": 36, "activity": "tìm kiếm đồ điện tử", "intent": "ưu đãi cyber monday", "notes": "CÚ SỐC: Lưu lượng truy cập tăng vọt phần 2. Trừng phạt đặt giá thầu mở rộng quá tích cực.", "exact": "None", "broad": "ALL TEAMS", "miss": "None" },
+  { "round": 19, "userId": 6621, "age": 41, "activity": "xem tạp chí thời trang", "intent": "kem nền cao cấp", "notes": "Phần thưởng cho việc bảo toàn ngân sách.", "exact": "GlowBeauty", "broad": "None", "miss": "SneakerX, TechGadget, FitGear" },
+  { "round": 20, "userId": 3812, "age": 23, "activity": "xem đánh giá phụ kiện máy tính", "intent": "chuột không dây", "notes": "Phần thưởng cho việc bảo toàn ngân sách.", "exact": "TechGadget", "broad": "None", "miss": "SneakerX, GlowBeauty, FitGear" },
+  { "round": 21, "userId": 5543, "age": 27, "activity": "đọc hướng dẫn yoga", "intent": "áo ngực thể thao", "notes": "Vòng tiêu chuẩn.", "exact": "FitGear", "broad": "None", "miss": "SneakerX, TechGadget, GlowBeauty" },
+  { "round": 22, "userId": 9912, "age": 20, "activity": "xem highlight bóng rổ", "intent": "giày bóng rổ", "notes": "Vòng tiêu chuẩn.", "exact": "SneakerX", "broad": "FitGear", "miss": "TechGadget, GlowBeauty" },
+  { "round": 23, "userId": "Ẩn", "age": "??", "activity": "đọc báo thời tiết địa phương", "intent": "Không xác định (Chặn Cookie)", "notes": "CÚ SỐC: Cookie bị chặn. Bạn không biết tuổi hay sở thích, chỉ biết ngữ cảnh trang web (Contextual Targeting).", "exact": "None", "broad": "None", "miss": "ALL TEAMS" },
+  { "round": 24, "userId": "Ẩn", "age": "??", "activity": "chơi game giải đố trên điện thoại", "intent": "Không xác định (Chặn Cookie)", "notes": "Cookie bị chặn phần 2. Ngữ cảnh trang web không liên quan đến thương hiệu nào.", "exact": "None", "broad": "None", "miss": "ALL TEAMS" },
+  { "round": 25, "userId": "Ẩn", "age": "??", "activity": "đọc bài viết chăm sóc da mùa đông", "intent": "Không xác định (Chặn Cookie)", "notes": "Không có cookie, nhưng ngữ cảnh trang web (Contextual Targeting) rất phù hợp với GlowBeauty.", "exact": "GlowBeauty", "broad": "None", "miss": "SneakerX, TechGadget, FitGear" },
+  { "round": 26, "userId": "Ẩn", "age": "??", "activity": "đọc trang đánh giá đồ công nghệ wearable", "intent": "Không xác định (Chặn Cookie)", "notes": "Nhắm mục tiêu theo ngữ cảnh. Giá trị cao cho TechGadget.", "exact": "TechGadget", "broad": "FitGear", "miss": "SneakerX, GlowBeauty" },
+  { "round": 27, "userId": "Ẩn", "age": "??", "activity": "xem video hướng dẫn tập yoga tại nhà", "intent": "Không xác định (Chặn Cookie)", "notes": "Vòng cuối. Không có cookie, chỉ có ngữ cảnh trang web. Các đội có thể dồn hết ngân sách.", "exact": "FitGear", "broad": "None", "miss": "SneakerX, TechGadget, GlowBeauty" }
+]
 
 # --- State Management ---
 
@@ -84,7 +58,6 @@ class SimulationState:
         self.time_left = 0
 
     def get_dict(self):
-        scenarios = get_scenarios()
         return {
             "currentRoundIndex": self.current_round_index,
             "players": self.players,
@@ -94,8 +67,8 @@ class SimulationState:
             "showPhase2Rules": self.show_phase2_rules,
             "showFinalSummary": self.show_final_summary,
             "timeLeft": self.time_left,
-            "scenariosCount": len(scenarios),
-            "currentScenario": scenarios[self.current_round_index] if 0 <= self.current_round_index < len(scenarios) else None
+            "scenariosCount": len(SCENARIOS),
+            "currentScenario": SCENARIOS[self.current_round_index] if 0 <= self.current_round_index < len(SCENARIOS) else None
         }
 
 state = SimulationState()
@@ -123,11 +96,10 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 def execute_auction():
-    scenarios = get_scenarios()
-    if state.current_round_index < 0 or state.current_round_index >= len(scenarios):
+    if state.current_round_index < 0 or state.current_round_index >= len(SCENARIOS):
         return
     
-    scenario = scenarios[state.current_round_index]
+    scenario = SCENARIOS[state.current_round_index]
     bidding_players = [{"name": name, "bid": data["bid"], "archetype": data["archetype"]} 
                        for name, data in state.players.items()]
     
@@ -156,6 +128,7 @@ def execute_auction():
 
     net_profit = revenue - price_paid
     state.players[winner["name"]]["profit"] += net_profit
+    
     state.result = {
         "winner": winner["name"], "archetype": winner["archetype"], "winningBid": winner["bid"], 
         "pricePaid": price_paid, "matchType": match_type, "revenue": revenue, "profit": net_profit
@@ -165,14 +138,9 @@ def execute_auction():
         state.players[name]["bid"] = 0.0
 
 async def advance_phase_with_broadcast():
-    # Progress the phase first
     if state.current_round_index == -1 and not state.show_phase1_rules:
         state.show_phase1_rules = True
     elif state.show_phase1_rules:
-        scenarios = get_scenarios()
-        if not scenarios:
-            await manager.broadcast({"type": "ERROR", "payload": "Scenarios not found. Check server logs for path details."})
-            return
         state.show_phase1_rules = False
         state.current_round_index = 0
         state.result = None
@@ -181,21 +149,16 @@ async def advance_phase_with_broadcast():
         state.show_phase2_rules = True
         state.result = None
     elif state.show_phase2_rules:
-        scenarios = get_scenarios()
-        if len(scenarios) < 13:
-            await manager.broadcast({"type": "ERROR", "payload": "Cannot start Phase 2: Not enough scenarios loaded."})
-            return
         state.show_phase2_rules = False
         state.current_round_index = 12
         state.result = None
     elif state.show_final_summary:
         state.reset()
     elif state.result:
-        scenarios = get_scenarios()
         if state.current_round_index == 11:
             state.show_phase1_summary = True
             state.result = None
-        elif state.current_round_index >= len(scenarios) - 1:
+        elif state.current_round_index >= len(SCENARIOS) - 1:
             state.show_final_summary = True
             state.result = None
         else:
@@ -204,10 +167,8 @@ async def advance_phase_with_broadcast():
     else:
         execute_auction()
 
-    # Manage Timers
     stop_timer()
-    scenarios = get_scenarios()
-    if (0 <= state.current_round_index < len(scenarios) and not state.result and 
+    if (0 <= state.current_round_index < len(SCENARIOS) and not state.result and 
         not any([state.show_phase1_rules, state.show_phase2_rules, state.show_phase1_summary, state.show_final_summary])):
         start_timer(90)
     elif state.result:
