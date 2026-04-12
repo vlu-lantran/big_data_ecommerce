@@ -39,6 +39,8 @@ export default function Class8AdBiddingSimulation({ apiBaseUrl }) {
         setGameState(message.payload);
       } else if (message.type === 'TIMER_TICK') {
         setGameState(prev => ({ ...prev, timeLeft: message.payload.timeLeft }));
+      } else if (message.type === 'ERROR') {
+        alert("CRITICAL ERROR: " + message.payload);
       }
     };
 

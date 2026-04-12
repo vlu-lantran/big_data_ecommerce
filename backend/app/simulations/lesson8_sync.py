@@ -15,8 +15,6 @@ SCENARIOS_CACHE = []
 
 def load_scenarios_from_disk():
     env_path = os.getenv("MOCK_GCS_BUCKET_PATH")
-    
-    # Try multiple candidate paths for robustness in Cloud Run
     candidates = []
     if env_path:
         p = Path(env_path)
@@ -25,7 +23,10 @@ def load_scenarios_from_disk():
     
     candidates.append(Path("/data/mock_gcs_bucket/classes/lesson-8-lab-web-advertising/scenarios.json"))
     candidates.append(Path("/data/mock_gcs_bucket/lesson-8-lab-web-advertising/scenarios.json"))
-    candidates.append(Path(__file__).resolve().parents[3] / "mock_gcs_bucket" / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json")
+    
+    # Adjusted parent logic for container structure
+    current_file = Path(__file__).resolve()
+    candidates.append(current_file.parents[3] / "mock_gcs_bucket" / "classes" / "lesson-8-lab-web-advertising" / "scenarios.json")
 
     for path in candidates:
         if path and path.exists():
@@ -37,7 +38,7 @@ def load_scenarios_from_disk():
             except Exception as e:
                 logger.error(f"ERROR reading scenarios from {path}: {e}")
     
-    logger.error("CRITICAL: Could not find scenarios.json in any candidate path!")
+    logger.error(f"CRITICAL: Could not find scenarios.json. Checked: {[str(c) for c in candidates if c]}")
     return []
 
 def get_scenarios():
@@ -143,15 +144,15 @@ def execute_auction():
         state.players[name]["submitted"] = False
         state.players[name]["bid"] = 0.0
 
-def advance_phase():
-    scenarios = get_scenarios()
-    if not scenarios:
-        logger.error("Cannot advance: No scenarios loaded.")
-        return
-
+async def advance_phase_with_broadcast():
+    # Progress the phase first
     if state.current_round_index == -1 and not state.show_phase1_rules:
         state.show_phase1_rules = True
     elif state.show_phase1_rules:
+        scenarios = get_scenarios()
+        if not scenarios:
+            await manager.broadcast({"type": "ERROR", "payload": "Cannot start: scenarios.json not found on server."})
+            return
         state.show_phase1_rules = False
         state.current_round_index = 0
         state.result = None
@@ -160,12 +161,17 @@ def advance_phase():
         state.show_phase2_rules = True
         state.result = None
     elif state.show_phase2_rules:
+        scenarios = get_scenarios()
+        if len(scenarios) < 13:
+            await manager.broadcast({"type": "ERROR", "payload": "Cannot start Phase 2: Not enough scenarios loaded."})
+            return
         state.show_phase2_rules = False
         state.current_round_index = 12
         state.result = None
     elif state.show_final_summary:
         state.reset()
     elif state.result:
+        scenarios = get_scenarios()
         if state.current_round_index == 11:
             state.show_phase1_summary = True
             state.result = None
@@ -178,12 +184,16 @@ def advance_phase():
     else:
         execute_auction()
 
+    # Manage Timers
     stop_timer()
+    scenarios = get_scenarios()
     if (0 <= state.current_round_index < len(scenarios) and not state.result and 
         not any([state.show_phase1_rules, state.show_phase2_rules, state.show_phase1_summary, state.show_final_summary])):
         start_timer(90)
     elif state.result:
         start_timer(15)
+    
+    await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
 
 async def run_timer():
     try:
@@ -191,8 +201,7 @@ async def run_timer():
             await asyncio.sleep(1)
             state.time_left -= 1
             if state.time_left == 0:
-                advance_phase()
-                await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
+                await advance_phase_with_broadcast()
                 return
             else:
                 await manager.broadcast({"type": "TIMER_TICK", "payload": {"timeLeft": state.time_left}})
@@ -231,11 +240,11 @@ async def websocket_endpoint(websocket: WebSocket):
                 if name in state.players:
                     state.players[name]["bid"], state.players[name]["submitted"] = amount, True
                 if all(p["submitted"] for p in state.players.values()):
-                    advance_phase()
-                await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
+                    await advance_phase_with_broadcast()
+                else:
+                    await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
             elif msg_type == "FORCE_AUCTION" or msg_type == "NEXT_PHASE":
-                advance_phase()
-                await manager.broadcast({"type": "STATE_UPDATE", "payload": state.get_dict()})
+                await advance_phase_with_broadcast()
             elif msg_type == "RESTART":
                 stop_timer()
                 state.reset()
